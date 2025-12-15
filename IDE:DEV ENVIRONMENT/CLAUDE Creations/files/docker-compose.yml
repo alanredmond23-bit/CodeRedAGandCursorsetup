@@ -1,0 +1,212 @@
+version: '3.8'
+
+services:
+  # Core Infrastructure
+  redis:
+    image: redis:alpine
+    container_name: redis-agent-comm
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru
+    restart: unless-stopped
+    networks:
+      - agent-network
+
+  # Master Orchestrator
+  orchestrator:
+    build: .
+    container_name: agent-orchestrator
+    environment:
+      - AGENT_ID=orchestrator_prime
+      - AGENT_ROLE=orchestrator
+      - REDIS_URL=redis://redis:6379
+      - MODEL=claude-opus-4.1
+    env_file:
+      - .env
+    depends_on:
+      - redis
+    volumes:
+      - ./:/app
+      - ./projects:/projects
+    restart: unless-stopped
+    networks:
+      - agent-network
+
+  # Project Manager
+  project_manager:
+    build: .
+    container_name: agent-manager
+    environment:
+      - AGENT_ID=manager_executive
+      - AGENT_ROLE=manager
+      - REDIS_URL=redis://redis:6379
+      - MODEL=gpt-4
+    env_file:
+      - .env
+    depends_on:
+      - redis
+      - orchestrator
+    volumes:
+      - ./:/app
+      - ./projects:/projects
+    restart: unless-stopped
+    networks:
+      - agent-network
+
+  # Frontend Specialist
+  frontend:
+    build: .
+    container_name: agent-frontend
+    environment:
+      - AGENT_ID=frontend_specialist
+      - AGENT_ROLE=frontend
+      - REDIS_URL=redis://redis:6379
+      - MODEL=claude-sonnet-4.5
+    env_file:
+      - .env
+    depends_on:
+      - redis
+      - project_manager
+    volumes:
+      - ./:/app
+      - ./projects:/projects
+    restart: unless-stopped
+    networks:
+      - agent-network
+
+  # Backend Engineer
+  backend:
+    build: .
+    container_name: agent-backend
+    environment:
+      - AGENT_ID=backend_engineer
+      - AGENT_ROLE=backend
+      - REDIS_URL=redis://redis:6379
+      - MODEL=claude-sonnet-4.5
+    env_file:
+      - .env
+    depends_on:
+      - redis
+      - project_manager
+    volumes:
+      - ./:/app
+      - ./projects:/projects
+    restart: unless-stopped
+    networks:
+      - agent-network
+
+  # Database Specialist
+  database:
+    build: .
+    container_name: agent-database
+    environment:
+      - AGENT_ID=database_specialist
+      - AGENT_ROLE=database
+      - REDIS_URL=redis://redis:6379
+      - MODEL=claude-sonnet-4.5
+    env_file:
+      - .env
+    depends_on:
+      - redis
+      - project_manager
+    volumes:
+      - ./:/app
+      - ./projects:/projects
+    restart: unless-stopped
+    networks:
+      - agent-network
+
+  # Deployment Agent
+  deploy:
+    build: .
+    container_name: agent-deploy
+    environment:
+      - AGENT_ID=deploy_automator
+      - AGENT_ROLE=deploy
+      - REDIS_URL=redis://redis:6379
+      - MODEL=gpt-4
+    env_file:
+      - .env
+    depends_on:
+      - redis
+      - project_manager
+    volumes:
+      - ./:/app
+      - ./projects:/projects
+      - /var/run/docker.sock:/var/run/docker.sock  # For Docker operations
+    restart: unless-stopped
+    networks:
+      - agent-network
+
+  # Quality Assurance
+  quality:
+    build: .
+    container_name: agent-quality
+    environment:
+      - AGENT_ID=quality_assurance
+      - AGENT_ROLE=quality
+      - REDIS_URL=redis://redis:6379
+      - MODEL=claude-opus-4.1
+    env_file:
+      - .env
+    depends_on:
+      - redis
+      - frontend
+      - backend
+      - database
+    volumes:
+      - ./:/app
+      - ./projects:/projects
+    restart: unless-stopped
+    networks:
+      - agent-network
+
+  # Legal Analyst (for your legal work)
+  legal:
+    build: .
+    container_name: agent-legal
+    environment:
+      - AGENT_ID=legal_analyst
+      - AGENT_ROLE=legal
+      - REDIS_URL=redis://redis:6379
+      - MODEL=claude-opus-4.1  # Maximum precision for legal
+    env_file:
+      - .env
+    depends_on:
+      - redis
+      - orchestrator
+    volumes:
+      - ./:/app
+      - ./legal:/legal
+    restart: unless-stopped
+    networks:
+      - agent-network
+
+  # Monitoring Dashboard (Optional)
+  redis-commander:
+    container_name: redis-commander
+    hostname: redis-commander
+    image: rediscommander/redis-commander:latest
+    restart: unless-stopped
+    environment:
+      - REDIS_HOSTS=local:redis:6379
+    ports:
+      - "8081:8081"
+    depends_on:
+      - redis
+    networks:
+      - agent-network
+
+volumes:
+  redis-data:
+    driver: local
+  projects:
+    driver: local
+  legal:
+    driver: local
+
+networks:
+  agent-network:
+    driver: bridge

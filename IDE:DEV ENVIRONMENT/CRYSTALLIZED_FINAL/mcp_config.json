@@ -1,0 +1,72 @@
+{
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "${PROJECT_ROOT}"],
+      "description": "File system access for the project root"
+    },
+    "supabase": {
+      "url": "https://mcp.supabase.com/mcp",
+      "env": {
+        "SUPABASE_URL": "${SUPABASE_URL}",
+        "SUPABASE_ANON_KEY": "${SUPABASE_ANON_KEY}",
+        "SUPABASE_SERVICE_KEY": "${SUPABASE_SERVICE_KEY}"
+      },
+      "description": "Supabase database introspection and queries"
+    },
+    "git": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-git"],
+      "description": "Git operations for version control"
+    },
+    "chrome-devtools": {
+      "command": "npx",
+      "args": ["-y", "chrome-devtools-mcp@latest"],
+      "description": "Chrome DevTools for debugging - console, network, DOM"
+    },
+    "context7": {
+      "serverUrl": "https://mcp.context7.com/mcp",
+      "headers": {
+        "CONTEXT7_API_KEY": "${CONTEXT7_API_KEY}"
+      },
+      "description": "Up-to-date library documentation to prevent hallucinations"
+    },
+    "vercel": {
+      "command": "npx",
+      "args": ["-y", "@vercel/mcp-server"],
+      "env": {
+        "VERCEL_TOKEN": "${VERCEL_TOKEN}",
+        "VERCEL_PROJECT_ID": "${VERCEL_PROJECT_ID}"
+      },
+      "description": "Vercel deployment management"
+    },
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_TOKEN": "${GITHUB_TOKEN}"
+      },
+      "description": "GitHub issues, PRs, and repo management"
+    }
+  },
+  "defaults": {
+    "timeout_ms": 30000,
+    "retry_count": 2
+  },
+  "security": {
+    "allowlist": [
+      "filesystem",
+      "supabase",
+      "git",
+      "chrome-devtools",
+      "vercel",
+      "github"
+    ],
+    "blocklist": [],
+    "require_approval_for": [
+      "filesystem:write",
+      "supabase:delete",
+      "vercel:deploy:production"
+    ]
+  }
+}
