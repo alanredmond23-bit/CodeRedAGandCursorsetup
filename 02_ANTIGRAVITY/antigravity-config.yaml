@@ -1,0 +1,254 @@
+system: CodeGreen
+type: cloud-orchestration
+description: Antigravity Cloud Configuration for Software Development
+
+workspace:
+  name: CodeGreen Development
+  region: us-west-2
+  environment: production
+  trustLevel: high
+
+agents:
+  native_agents:
+    - id: coordinator-cloud
+      name: Cloud Coordinator Agent
+      role: Route requests to specialist agents
+      capability: Route development tasks to appropriate cloud agent
+      budget: 10000  # tokens/day
+      timeout: 30    # seconds
+      
+    - id: pipeline-manager
+      name: Pipeline Manager Agent
+      role: Manage CI/CD workflows and deployments
+      capability: Orchestrate builds, tests, deployments
+      budget: 15000
+      timeout: 60
+      
+    - id: quality-monitor
+      name: Quality Monitor Agent
+      role: Track code quality and performance metrics
+      capability: Monitor tests, coverage, performance
+      budget: 12000
+      timeout: 45
+
+sync_engine:
+  enabled: true
+  source: Claude Code Terminal (source of truth)
+  syncInterval: 30  # seconds
+  latencyTarget: 2000  # milliseconds
+  successRateTarget: 0.99
+  
+  sync_items:
+    - agent_prompts
+    - system_settings
+    - project_metadata
+    - test_results
+    - deployment_status
+    - performance_metrics
+    - cost_tracking
+  
+  conflict_resolution:
+    strategy: source_wins
+    source: Claude Code Terminal
+    logging: comprehensive
+    alertOnConflict: true
+
+mcp_servers:
+  github:
+    enabled: true
+    auth_method: oauth2
+    endpoints:
+      - repos
+      - workflows
+      - pulls
+      - issues
+  
+  ci_cd:
+    enabled: true
+    platforms:
+      - github_actions
+      - circle_ci
+    features:
+      - workflow_status
+      - artifact_retrieval
+      - log_streaming
+  
+  monitoring:
+    enabled: true
+    platforms:
+      - sentry
+      - datadog
+      - newrelic
+    features:
+      - metrics
+      - errors
+      - logs
+  
+  npm_registry:
+    enabled: true
+    features:
+      - package_search
+      - vulnerability_check
+      - version_info
+
+database:
+  provider: supabase
+  location: us-west-2
+  
+  tables:
+    - projects
+    - repositories
+    - builds
+    - tests
+    - deployments
+    - performance_metrics
+    - errors
+    - developers
+    - teams
+    - permissions
+  
+  replication:
+    enabled: true
+    regions:
+      - us-west-2
+      - us-east-1
+  
+  backup:
+    enabled: true
+    frequency: hourly
+    retention_days: 30
+
+workflows:
+  build:
+    name: Build Pipeline
+    trigger: push_to_main
+    steps:
+      - checkout
+      - install_dependencies
+      - lint
+      - type_check
+      - build
+    timeout: 600  # seconds
+  
+  test:
+    name: Test Pipeline
+    trigger: pull_request
+    steps:
+      - checkout
+      - install_dependencies
+      - run_tests
+      - check_coverage
+    timeout: 900
+    coverage_threshold: 80
+  
+  deploy:
+    name: Deploy Pipeline
+    trigger: release_tag
+    steps:
+      - checkout
+      - install_dependencies
+      - build
+      - run_tests
+      - deploy_production
+    timeout: 1800
+    requires_approval: true
+    approval_timeout: 3600  # 1 hour
+
+notifications:
+  channels:
+    - slack
+    - email
+  
+  slack:
+    enabled: true
+    webhook_url: "${SLACK_WEBHOOK_URL}"
+    mentions:
+      error: "@channel"
+      warning: ""
+      success: ""
+  
+  email:
+    enabled: true
+    recipients:
+      - on_build_failure: dev-team@company.com
+      - on_deploy: devops@company.com
+
+monitoring:
+  health_check:
+    interval: 60  # seconds
+    timeout: 10
+    metrics:
+      - cpu_usage
+      - memory_usage
+      - sync_latency
+      - error_rate
+  
+  alerts:
+    - condition: "sync_latency > 5000"
+      severity: high
+      action: notify_slack
+    
+    - condition: "error_rate > 0.05"
+      severity: high
+      action: notify_slack
+    
+    - condition: "coverage < 80"
+      severity: medium
+      action: notify_email
+
+rate_limiting:
+  requests_per_minute: 1000
+  burst_size: 200
+  retry_strategy: exponential_backoff
+  max_retries: 3
+
+security:
+  encryption:
+    enabled: true
+    method: AES-256
+  
+  authentication:
+    method: oauth2
+    providers:
+      - github
+      - google
+  
+  audit_logging:
+    enabled: true
+    retention_days: 365
+    log_level: info
+
+cost_tracking:
+  enabled: true
+  granularity: per_agent_per_day
+  currency: USD
+  budget:
+    daily: 500
+    monthly: 10000
+  alerts:
+    threshold_percent: 80
+    notify_channel: slack
+
+compliance:
+  audit_trail: true
+  audit_retention_years: 7
+  data_residency: us-only
+  encryption_at_rest: true
+  encryption_in_transit: true
+
+quick_start:
+  setup_time_minutes: 10
+  steps:
+    - Enable workspace
+    - Configure OAuth2 credentials
+    - Link Supabase database
+    - Deploy sync engine
+    - Run health check
+    - Verify <2s latency
+
+status:
+  current_state: ready
+  last_health_check: "2025-12-16T08:00:00Z"
+  agents_active: 3
+  sync_success_rate: 0.99
+  average_latency_ms: 1200

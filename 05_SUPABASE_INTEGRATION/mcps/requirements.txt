@@ -1,0 +1,29 @@
+# MCP Integration Dependencies
+
+# Core dependencies
+requests>=2.31.0
+python-dotenv>=1.0.0
+
+# Google APIs (Gmail)
+google-auth>=2.23.0
+google-auth-oauthlib>=1.1.0
+google-auth-httplib2>=0.1.1
+google-api-python-client>=2.100.0
+
+# Supabase
+supabase>=2.0.0
+postgrest>=0.10.0
+
+# Caching (optional)
+redis>=5.0.0
+
+# Data processing
+python-dateutil>=2.8.2
+
+# Logging enhancements (optional)
+colorlog>=6.7.0
+
+# Testing
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+pytest-cov>=4.1.0

@@ -1,0 +1,370 @@
+{
+  "session_id": "session_20251216_103045_abc123",
+  "created_at": "2025-12-16T10:30:45Z",
+  "last_updated": "2025-12-16T11:15:22Z",
+  "attorney": "alan.redmond@law.com",
+  "active_mode": "coordinator",
+
+  "case_context": {
+    "case_number": "CV-2024-12345",
+    "case_name": "Smith v. TechCorp International, Inc.",
+    "court": "Superior Court of California, County of San Francisco",
+    "filing_date": "2024-03-15",
+    "case_type": "Civil - Contract Dispute",
+    "status": "Discovery Phase",
+    "judge": "Hon. Patricia Chen",
+    "parties": {
+      "plaintiff": {
+        "name": "John Smith",
+        "entity_type": "individual",
+        "represented_by": "Alan Redmond",
+        "role": "Former CEO of TechCorp"
+      },
+      "defendant": {
+        "name": "TechCorp International, Inc.",
+        "entity_type": "corporation",
+        "represented_by": "Wilson & Associates LLP",
+        "counsel": "Attorney Sarah Wilson"
+      }
+    },
+    "claims": [
+      "Breach of Employment Contract",
+      "Wrongful Termination",
+      "Defamation",
+      "Intentional Infliction of Emotional Distress"
+    ],
+    "damages_sought": "$5,000,000",
+    "deadlines": [
+      {
+        "type": "discovery_cutoff",
+        "date": "2025-01-15",
+        "days_remaining": 30,
+        "status": "upcoming"
+      },
+      {
+        "type": "expert_witness_disclosure",
+        "date": "2024-12-20",
+        "days_remaining": 4,
+        "status": "urgent"
+      },
+      {
+        "type": "motion_hearing",
+        "date": "2025-02-10",
+        "description": "Motion to Compel Production of Documents",
+        "days_remaining": 56,
+        "status": "scheduled"
+      }
+    ],
+    "key_facts": [
+      "Smith hired as CEO in 2020 with 5-year employment contract",
+      "Terminated without cause in September 2023",
+      "Contract contained $2M severance clause",
+      "TechCorp refused to pay severance",
+      "TechCorp issued press release alleging 'performance issues'",
+      "Smith denies performance issues, claims retaliation"
+    ]
+  },
+
+  "conversation_history": [
+    {
+      "timestamp": "2025-12-16T10:30:45Z",
+      "user": "attorney",
+      "message": "Show me the status of the Smith v. TechCorp case",
+      "mode": "coordinator"
+    },
+    {
+      "timestamp": "2025-12-16T10:31:12Z",
+      "assistant": "coordinator",
+      "message": "Case Status Summary for Smith v. TechCorp (CV-2024-12345):\n\nStatus: Discovery Phase\nUrgent Deadlines: Expert witness disclosure in 4 days (Dec 20)\nPending Tasks: 5\nRecent Activity: Motion to compel filed yesterday\n\nWould you like details on any specific aspect?",
+      "metadata": {
+        "tasks_retrieved": 5,
+        "deadlines_checked": 3
+      }
+    },
+    {
+      "timestamp": "2025-12-16T10:32:30Z",
+      "user": "attorney",
+      "message": "Find all emails between Smith and the TechCorp board about his termination",
+      "mode": "discovery",
+      "invoked_mode": true
+    },
+    {
+      "timestamp": "2025-12-16T10:35:45Z",
+      "assistant": "discovery",
+      "message": "Discovery completed. Found 23 emails between Smith and TechCorp board members regarding termination. WARNING: 3 emails flagged as potentially privileged (attorney-client communications). Manual review required before production.",
+      "metadata": {
+        "discovery_id": "disc_20251216_103245_xyz789",
+        "results_count": 23,
+        "privilege_flags": 3,
+        "sources": ["Gmail"]
+      }
+    },
+    {
+      "timestamp": "2025-12-16T10:40:15Z",
+      "user": "attorney",
+      "message": "Analyze our chances of winning the breach of contract claim",
+      "mode": "analysis",
+      "invoked_mode": true
+    },
+    {
+      "timestamp": "2025-12-16T10:45:30Z",
+      "assistant": "analysis",
+      "message": "Success Probability: 75% (High Confidence)\n\nStrengths: Clear written contract, undisputed termination, severance clause unambiguous\nWeaknesses: Defendant may argue 'for cause' based on performance issues\nKey Risk: Credibility contest on performance vs. retaliation\n\nRecommendation: Strong case, proceed with settlement demand at 80% of damages",
+      "metadata": {
+        "analysis_id": "analysis_20251216_104015_def456",
+        "success_probability": 0.75,
+        "confidence": "HIGH"
+      }
+    }
+  ],
+
+  "mode_results": {
+    "discovery": [
+      {
+        "discovery_id": "disc_20251216_103245_xyz789",
+        "timestamp": "2025-12-16T10:35:45Z",
+        "source": "Gmail",
+        "query": "from:smith@techcorp.com OR to:smith@techcorp.com subject:termination OR subject:severance",
+        "results_count": 23,
+        "privilege_flags": 3,
+        "summary": "23 emails found, 3 require privilege review"
+      },
+      {
+        "discovery_id": "disc_20251216_095012_abc123",
+        "timestamp": "2025-12-16T09:50:12Z",
+        "source": "Westlaw",
+        "query": "wrongful termination California employment contract",
+        "results_count": 47,
+        "privilege_flags": 0,
+        "summary": "47 California cases on wrongful termination"
+      }
+    ],
+    "strategy": [
+      {
+        "strategy_id": "strat_20251215_143022_ghi789",
+        "timestamp": "2025-12-15T14:30:22Z",
+        "motion_type": "motion_to_compel",
+        "case_number": "CV-2024-12345",
+        "summary": "Motion to compel production of performance reviews drafted",
+        "status": "FILED"
+      }
+    ],
+    "evidence": [
+      {
+        "evidence_id": "evid_20251214_112045_jkl012",
+        "timestamp": "2025-12-14T11:20:45Z",
+        "extraction_type": "timeline",
+        "facts_extracted": 156,
+        "timeline_events": 23,
+        "summary": "Complete timeline of Smith's employment and termination"
+      }
+    ],
+    "analysis": [
+      {
+        "analysis_id": "analysis_20251216_104015_def456",
+        "timestamp": "2025-12-16T10:45:30Z",
+        "claim": "Breach of Contract",
+        "success_probability": 0.75,
+        "confidence": "HIGH",
+        "summary": "Strong case for breach of contract claim"
+      }
+    ]
+  },
+
+  "privilege_log": [
+    {
+      "timestamp": "2025-12-16T10:35:45Z",
+      "document_id": "email_20230915_001",
+      "source": "Gmail",
+      "privilege_type": "attorney-client",
+      "confidence": "HIGH",
+      "reason": "Email from Smith to Attorney Redmond requesting legal advice on severance",
+      "reviewed": false,
+      "attorney_decision": null,
+      "action_required": "MANUAL_REVIEW"
+    },
+    {
+      "timestamp": "2025-12-16T10:35:45Z",
+      "document_id": "email_20230918_003",
+      "source": "Gmail",
+      "privilege_type": "attorney-client",
+      "confidence": "HIGH",
+      "reason": "Email from Attorney Redmond to Smith providing legal analysis",
+      "reviewed": false,
+      "attorney_decision": null,
+      "action_required": "MANUAL_REVIEW"
+    },
+    {
+      "timestamp": "2025-12-16T10:35:45Z",
+      "document_id": "email_20231001_007",
+      "source": "Gmail",
+      "privilege_type": "work-product",
+      "confidence": "MEDIUM",
+      "reason": "Email discussing litigation strategy",
+      "reviewed": false,
+      "attorney_decision": null,
+      "action_required": "MANUAL_REVIEW"
+    }
+  ],
+
+  "pending_tasks": [
+    {
+      "task_id": "task_001",
+      "created": "2025-12-16T09:00:00Z",
+      "priority": "URGENT",
+      "deadline": "2024-12-20",
+      "description": "Finalize expert witness disclosure for economics expert",
+      "assigned_to": "attorney",
+      "status": "IN_PROGRESS"
+    },
+    {
+      "task_id": "task_002",
+      "created": "2025-12-15T14:00:00Z",
+      "priority": "HIGH",
+      "deadline": "2024-12-23",
+      "description": "Review 3 privileged emails flagged by Discovery Bot",
+      "assigned_to": "attorney",
+      "status": "PENDING"
+    },
+    {
+      "task_id": "task_003",
+      "created": "2025-12-14T11:00:00Z",
+      "priority": "MEDIUM",
+      "deadline": "2025-01-05",
+      "description": "Depose TechCorp CFO on financial statements",
+      "assigned_to": "attorney",
+      "status": "SCHEDULED"
+    },
+    {
+      "task_id": "task_004",
+      "created": "2025-12-13T16:00:00Z",
+      "priority": "MEDIUM",
+      "deadline": "2025-01-10",
+      "description": "Prepare settlement demand letter",
+      "assigned_to": "strategy_bot",
+      "status": "QUEUED"
+    },
+    {
+      "task_id": "task_005",
+      "created": "2025-12-12T10:00:00Z",
+      "priority": "LOW",
+      "deadline": "2025-01-15",
+      "description": "Update case database with recent depositions",
+      "assigned_to": "evidence_bot",
+      "status": "PENDING"
+    }
+  ],
+
+  "mcp_status": {
+    "westlaw": {
+      "status": "CONNECTED",
+      "last_query": "2025-12-16T09:50:12Z",
+      "queries_today": 5,
+      "quota_remaining": 95
+    },
+    "lexisnexis": {
+      "status": "CONNECTED",
+      "last_query": "2025-12-15T16:22:33Z",
+      "queries_today": 2,
+      "quota_remaining": 48
+    },
+    "gmail": {
+      "status": "CONNECTED",
+      "last_query": "2025-12-16T10:35:45Z",
+      "queries_today": 12,
+      "quota_remaining": "unlimited"
+    },
+    "slack": {
+      "status": "CONNECTED",
+      "last_query": "2025-12-14T14:15:00Z",
+      "queries_today": 0,
+      "quota_remaining": 20
+    },
+    "supabase": {
+      "status": "CONNECTED",
+      "last_query": "2025-12-16T11:15:22Z",
+      "active_connections": 3,
+      "pool_size": 10
+    },
+    "openai": {
+      "status": "CONNECTED",
+      "last_query": "2025-12-16T10:42:18Z",
+      "tokens_used_today": 15234,
+      "quota_remaining": 984766
+    }
+  },
+
+  "checkpoints": [
+    {
+      "checkpoint_id": "cp_20251216_103000",
+      "timestamp": "2025-12-16T10:30:00Z",
+      "description": "Session started - coordinator mode"
+    },
+    {
+      "checkpoint_id": "cp_20251216_104500",
+      "timestamp": "2025-12-16T10:45:00Z",
+      "description": "Analysis completed - breach of contract probability"
+    },
+    {
+      "checkpoint_id": "cp_20251216_110000",
+      "timestamp": "2025-12-16T11:00:00Z",
+      "description": "Auto-save checkpoint"
+    },
+    {
+      "checkpoint_id": "cp_20251216_111500",
+      "timestamp": "2025-12-16T11:15:00Z",
+      "description": "Auto-save checkpoint"
+    }
+  ],
+
+  "rag_context": {
+    "loaded_documents": [
+      {
+        "document_id": "doc_001",
+        "title": "Smith Employment Contract (2020)",
+        "relevance": 0.95,
+        "loaded_at": "2025-12-16T10:32:00Z"
+      },
+      {
+        "document_id": "doc_015",
+        "title": "TechCorp Board Meeting Minutes (Sept 2023)",
+        "relevance": 0.88,
+        "loaded_at": "2025-12-16T10:33:15Z"
+      },
+      {
+        "document_id": "doc_023",
+        "title": "Performance Review - Smith (2022-2023)",
+        "relevance": 0.82,
+        "loaded_at": "2025-12-16T10:34:22Z"
+      }
+    ],
+    "search_queries": [
+      "employment contract severance clause",
+      "wrongful termination California",
+      "defamation employment context"
+    ],
+    "relevant_cases": [
+      {
+        "citation": "Guz v. Bechtel National, Inc., 24 Cal. 4th 317 (2000)",
+        "relevance": 0.92,
+        "principle": "At-will employment presumption and contract interpretation"
+      },
+      {
+        "citation": "Foley v. Interactive Data Corp., 47 Cal. 3d 654 (1988)",
+        "relevance": 0.87,
+        "principle": "Wrongful termination tort claims"
+      }
+    ]
+  },
+
+  "session_metadata": {
+    "total_messages": 10,
+    "modes_invoked": ["coordinator", "discovery", "analysis"],
+    "privilege_flags_raised": 3,
+    "tasks_created": 2,
+    "mcp_queries": 18,
+    "session_duration_minutes": 45,
+    "auto_saved": true,
+    "last_auto_save": "2025-12-16T11:15:00Z"
+  }
+}

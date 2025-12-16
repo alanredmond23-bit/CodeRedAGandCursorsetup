@@ -1,0 +1,434 @@
+{
+  "single_document_example": {
+    "document_id": "a1b2c3d4e5f6g7h8",
+    "source": {
+      "document_id": "a1b2c3d4e5f6g7h8",
+      "tracked_at": "2024-12-16T10:30:00.000Z",
+      "source_file": "email_2024_03_15.eml",
+      "original_path": "/discovery/production_001/emails/",
+      "source_system": "Exchange Server",
+      "custodian": "John Smith",
+      "collection_date": "2024-03-20",
+      "production_number": "PROD-001-00123",
+      "bates_number": "ACME-0001234",
+      "native_file_type": "email",
+      "hash": {
+        "md5": "5d41402abc4b2a76b9719d911017c592",
+        "sha256": "2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae"
+      }
+    },
+    "classification": {
+      "document_type": "email",
+      "confidence": 0.98,
+      "sub_type": "attorney-client communication",
+      "indicators": [
+        "Contains From/To/Subject headers",
+        "Email signature with Esq. title",
+        "Legal advice language present"
+      ],
+      "characteristics": [
+        "confidential",
+        "attorney-client privileged"
+      ],
+      "is_ocr": false,
+      "ocr_quality": null,
+      "needs_review": false,
+      "tokens_used": {
+        "input": 1245,
+        "output": 187,
+        "cache_creation": 856,
+        "cache_read": 0
+      }
+    },
+    "entities": {
+      "people": [
+        {
+          "name": "John Smith",
+          "title": "Senior Counsel",
+          "role": "attorney",
+          "confidence": 0.99,
+          "context": "From: John Smith, Senior Counsel <jsmith@lawfirm.com>",
+          "first_mention_position": 67
+        },
+        {
+          "name": "Sarah Johnson",
+          "title": "CEO",
+          "role": "client",
+          "confidence": 0.98,
+          "context": "To: Sarah Johnson, CEO <sjohnson@acmecorp.com>",
+          "first_mention_position": 124
+        }
+      ],
+      "organizations": [
+        {
+          "name": "Acme Corp",
+          "entity_type": "corporation",
+          "confidence": 0.95,
+          "context": "regarding the Jones v. Acme Corp litigation",
+          "first_mention_position": 234
+        }
+      ],
+      "dates": [
+        {
+          "date": "2024-03-15",
+          "original_format": "March 15, 2024",
+          "context": "email date",
+          "confidence": 1.0,
+          "position": 98
+        }
+      ],
+      "amounts": [
+        {
+          "amount": "$2,500,000.00",
+          "normalized_usd": 2500000.0,
+          "context": "settlement recommendation",
+          "confidence": 1.0,
+          "position": 456
+        },
+        {
+          "amount": "$5,000,000.00",
+          "normalized_usd": 5000000.0,
+          "context": "plaintiff's damages claim",
+          "confidence": 0.98,
+          "position": 523
+        }
+      ],
+      "locations": [],
+      "case_identifiers": [
+        {
+          "identifier": "CV-2024-001",
+          "type": "case_number",
+          "confidence": 1.0,
+          "context": "Case No. CV-2024-001",
+          "position": 189
+        }
+      ],
+      "other_entities": [
+        {
+          "type": "email",
+          "value": "jsmith@lawfirm.com",
+          "confidence": 1.0,
+          "position": 89
+        },
+        {
+          "type": "email",
+          "value": "sjohnson@acmecorp.com",
+          "confidence": 1.0,
+          "position": 145
+        }
+      ],
+      "extraction_summary": {
+        "total_entities": 9,
+        "high_confidence_entities": 9,
+        "needs_review": false
+      },
+      "tokens_used": {
+        "input": 2134,
+        "output": 876,
+        "cache_creation": 0,
+        "cache_read": 856
+      }
+    },
+    "privilege": {
+      "is_privileged": true,
+      "privilege_types": [
+        "attorney_client"
+      ],
+      "confidence": 0.98,
+      "privilege_indicators": [
+        {
+          "indicator": "Communication from attorney to client",
+          "evidence": "From: John Smith, Senior Counsel",
+          "weight": "strong"
+        },
+        {
+          "indicator": "Explicit privilege claim",
+          "evidence": "CONFIDENTIAL ATTORNEY-CLIENT COMMUNICATION",
+          "weight": "strong"
+        },
+        {
+          "indicator": "Legal advice provided",
+          "evidence": "This email contains my legal advice regarding the Jones litigation",
+          "weight": "strong"
+        },
+        {
+          "indicator": "Confidentiality request",
+          "evidence": "Please keep this confidential as it's protected by attorney-client privilege",
+          "weight": "strong"
+        }
+      ],
+      "privilege_concerns": [
+        {
+          "concern": "None identified",
+          "severity": "none"
+        }
+      ],
+      "participants": {
+        "attorneys": [
+          "John Smith, Senior Counsel"
+        ],
+        "clients": [
+          "Sarah Johnson, CEO"
+        ],
+        "third_parties": []
+      },
+      "reasoning": "This document is clearly privileged attorney-client communication. It contains: (1) communication from attorney (John Smith, Senior Counsel) to client (Sarah Johnson, CEO), (2) explicit privilege header 'CONFIDENTIAL ATTORNEY-CLIENT COMMUNICATION', (3) legal advice regarding litigation strategy and settlement recommendations, (4) request to maintain confidentiality. No waiver or exceptions identified.",
+      "needs_attorney_review": false,
+      "review_reason": null,
+      "redaction_recommended": true,
+      "redaction_scope": "entire document",
+      "method": "ai_analysis",
+      "tokens_used": {
+        "input": 1876,
+        "output": 543,
+        "cache_creation": 0,
+        "cache_read": 856
+      }
+    },
+    "keywords": {
+      "primary_keywords": [
+        {
+          "keyword": "settlement",
+          "relevance": 0.95,
+          "frequency": 3,
+          "context": "settlement strategy and recommendation",
+          "category": "legal_concept"
+        },
+        {
+          "keyword": "litigation",
+          "relevance": 0.92,
+          "frequency": 2,
+          "context": "Jones litigation and trial risks",
+          "category": "legal_concept"
+        },
+        {
+          "keyword": "damages",
+          "relevance": 0.88,
+          "frequency": 2,
+          "context": "damages claim evaluation",
+          "category": "legal_issue"
+        }
+      ],
+      "secondary_keywords": [
+        {
+          "keyword": "attorney-client",
+          "relevance": 0.85,
+          "frequency": 2,
+          "context": "attorney-client privilege and communication",
+          "category": "privilege"
+        }
+      ],
+      "key_phrases": [
+        {
+          "phrase": "settlement strategy",
+          "relevance": 0.93,
+          "frequency": 1,
+          "type": "legal_term"
+        },
+        {
+          "phrase": "trial risks",
+          "relevance": 0.87,
+          "frequency": 1,
+          "type": "legal_concept"
+        }
+      ],
+      "relevance_analysis": {
+        "overall_relevance": 0.92,
+        "relevance_factors": [
+          "Contains settlement recommendations",
+          "Includes damages analysis",
+          "Attorney-client privileged communication",
+          "Litigation strategy discussion"
+        ],
+        "discovery_value": "high",
+        "key_issues": [
+          "settlement",
+          "damages",
+          "litigation strategy"
+        ]
+      },
+      "search_suggestions": {
+        "keyword_searches": [
+          "settlement AND damages",
+          "Jones AND litigation",
+          "attorney-client AND settlement"
+        ],
+        "concept_searches": [
+          "settlement negotiations",
+          "damages evaluation",
+          "litigation risk assessment"
+        ],
+        "related_terms": [
+          "mediation",
+          "compromise",
+          "risk analysis"
+        ]
+      },
+      "summary": "Email from attorney to client providing legal advice on settlement strategy for Jones v. Acme Corp, recommending $2.5M settlement to mitigate trial risks.",
+      "tokens_used": {
+        "input": 1543,
+        "output": 412,
+        "cache_creation": 0,
+        "cache_read": 856
+      }
+    },
+    "embeddings": {
+      "semantic_summary": "Attorney-client privileged email from John Smith (Senior Counsel) to Sarah Johnson (CEO) providing legal advice on settlement strategy for Jones v. Acme Corp breach of contract case, recommending $2.5M settlement to avoid trial risks and noting plaintiff's $5M damages claim is overstated.",
+      "key_concepts": [
+        "attorney-client communication",
+        "settlement strategy",
+        "litigation risk assessment",
+        "damages analysis",
+        "legal advice",
+        "confidential communication"
+      ],
+      "semantic_tags": [
+        "practice_area:litigation",
+        "practice_area:contract_law",
+        "document_type:legal_advice",
+        "privilege:attorney_client",
+        "content:settlement_discussion",
+        "matter:jones_v_acme",
+        "confidentiality:privileged"
+      ],
+      "chunk_count": 1,
+      "metadata": {
+        "doc_hash": "7f8d9e2a3b4c5d6e7f8g9h0i1j2k3l4",
+        "text_length": 487,
+        "chunk_size": 512,
+        "overlap": 50
+      },
+      "embedding_instructions": {
+        "recommended_service": "voyage-law-2 or sentence-transformers/legal-bert-base-uncased",
+        "use_case": "semantic search and document similarity"
+      },
+      "tokens_used": {
+        "input": 987,
+        "output": 234,
+        "cache_creation": 0,
+        "cache_read": 856
+      }
+    },
+    "processed_at": "2024-12-16T10:30:15.234Z",
+    "model_used": "claude-sonnet-4-5-20250929",
+    "validation": {
+      "is_valid": true,
+      "needs_review": false,
+      "errors": [],
+      "warnings": [],
+      "checks_performed": 8,
+      "checks_passed": 8,
+      "validated_at": "2024-12-16T10:30:15.456Z"
+    },
+    "cost": {
+      "model": "claude-sonnet-4-5-20250929",
+      "tokens": {
+        "input": 7785,
+        "output": 2252,
+        "cache_creation": 856,
+        "cache_read": 3424
+      },
+      "costs": {
+        "input": 0.023355,
+        "output": 0.03378,
+        "cache_write": 0.003210,
+        "cache_read": 0.001027,
+        "total": 0.061372
+      },
+      "total_cost": 0.061372,
+      "cache_savings": 0.009245,
+      "calculated_at": "2024-12-16T10:30:15.789Z"
+    }
+  },
+  "batch_processing_example": {
+    "summary": {
+      "total_documents": 2,
+      "successful": 2,
+      "failed": 0,
+      "privileged_documents": 1,
+      "document_types": {
+        "email": 1,
+        "contract": 1
+      },
+      "total_entities": {
+        "people": 6,
+        "organizations": 3,
+        "dates": 3,
+        "amounts": 4,
+        "locations": 2
+      },
+      "timeline_events": 3,
+      "total_cost": 0.124567,
+      "processing_duration_seconds": 8.45,
+      "documents_per_second": 0.24,
+      "average_cost_per_document": 0.0623
+    },
+    "timeline": {
+      "total_events": 3,
+      "date_range": {
+        "earliest": "2024-01-10",
+        "latest": "2024-03-15",
+        "span_days": 65
+      },
+      "key_dates": [
+        {
+          "date": "2024-03-15",
+          "description": "email date",
+          "event_type": "communication",
+          "source_document": "a1b2c3d4e5f6g7h8",
+          "importance_score": 1.0
+        },
+        {
+          "date": "2024-01-10",
+          "description": "contract date",
+          "event_type": "agreement",
+          "source_document": "i9j8k7l6m5n4o3p2",
+          "importance_score": 1.0
+        },
+        {
+          "date": "2024-02-01",
+          "description": "delivery date",
+          "event_type": "deadline",
+          "source_document": "i9j8k7l6m5n4o3p2",
+          "importance_score": 0.95
+        }
+      ],
+      "timeline_statistics": {
+        "total_events": 3,
+        "event_type_distribution": {
+          "communication": 1,
+          "agreement": 1,
+          "deadline": 1
+        },
+        "privileged_events": 1,
+        "high_confidence_events": 3,
+        "documents_with_dates": 2,
+        "average_confidence": 0.98
+      }
+    },
+    "statistics": {
+      "total_processed": 2,
+      "successful": 2,
+      "failed": 0,
+      "privileged": 1,
+      "total_cost": 0.124567,
+      "start_time": "2024-12-16T10:30:00.000Z",
+      "end_time": "2024-12-16T10:30:08.450Z"
+    },
+    "batch_validation": {
+      "is_valid": true,
+      "needs_review": false,
+      "errors": [],
+      "warnings": [],
+      "summary": {
+        "total_documents_validated": 2,
+        "valid_documents": 2,
+        "invalid_documents": 0,
+        "documents_needing_review": 0,
+        "total_errors": 0,
+        "total_warnings": 0,
+        "success_rate": 100.0
+      }
+    }
+  }
+}

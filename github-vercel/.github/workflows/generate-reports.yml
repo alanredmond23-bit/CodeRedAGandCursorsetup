@@ -1,0 +1,407 @@
+name: Daily Discovery Reports
+
+on:
+  schedule:
+    # Run daily at 8 AM UTC
+    - cron: '0 8 * * *'
+  workflow_dispatch:
+    inputs:
+      report_type:
+        description: 'Report type to generate'
+        required: false
+        type: choice
+        options:
+          - daily
+          - weekly
+          - monthly
+          - custom
+        default: 'daily'
+      case_id:
+        description: 'Specific case ID (optional)'
+        required: false
+        type: string
+
+env:
+  REPORT_TIMEZONE: 'America/New_York'
+
+jobs:
+  gather-metrics:
+    name: Gather Discovery Metrics
+    runs-on: ubuntu-latest
+    outputs:
+      documents_processed: ${{ steps.metrics.outputs.docs }}
+      privileged_flagged: ${{ steps.metrics.outputs.privileged }}
+      total_cost: ${{ steps.metrics.outputs.cost }}
+      case_count: ${{ steps.metrics.outputs.cases }}
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+
+      - name: Install Dependencies
+        run: |
+          npm ci
+          npm install @supabase/supabase-js date-fns
+
+      - name: Fetch Metrics from Supabase
+        id: metrics
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          REPORT_TYPE: ${{ github.event.inputs.report_type || 'daily' }}
+        run: |
+          node scripts/fetch-discovery-metrics.js \
+            --type ${{ github.event.inputs.report_type || 'daily' }} \
+            --case-id "${{ github.event.inputs.case_id || '' }}"
+
+          docs=$(jq '.documents_processed' metrics.json)
+          privileged=$(jq '.privileged_flagged' metrics.json)
+          cost=$(jq '.total_cost' metrics.json)
+          cases=$(jq '.case_count' metrics.json)
+
+          echo "docs=$docs" >> $GITHUB_OUTPUT
+          echo "privileged=$privileged" >> $GITHUB_OUTPUT
+          echo "cost=$cost" >> $GITHUB_OUTPUT
+          echo "cases=$cases" >> $GITHUB_OUTPUT
+
+      - name: Upload Metrics
+        uses: actions/upload-artifact@v4
+        with:
+          name: raw-metrics
+          path: metrics.json
+
+  generate-case-summary:
+    name: Generate Case Summaries
+    runs-on: ubuntu-latest
+    needs: gather-metrics
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+
+      - name: Download Metrics
+        uses: actions/download-artifact@v4
+        with:
+          name: raw-metrics
+
+      - name: Generate AI-Powered Case Summaries
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          node scripts/generate-case-summaries.js \
+            --metrics metrics.json \
+            --output case-summaries.json
+
+      - name: Upload Case Summaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: case-summaries
+          path: case-summaries.json
+
+  generate-privilege-report:
+    name: Generate Privilege Report
+    runs-on: ubuntu-latest
+    needs: gather-metrics
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+
+      - name: Download Metrics
+        uses: actions/download-artifact@v4
+        with:
+          name: raw-metrics
+
+      - name: Generate Privilege Summary
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: |
+          node scripts/generate-privilege-summary.js \
+            --output privilege-summary.json
+
+      - name: Create Privilege Log Updates
+        run: |
+          node scripts/update-privilege-log.js
+
+      - name: Upload Privilege Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: privilege-report
+          path: |
+            privilege-summary.json
+            privilege-log-updates.xlsx
+
+  generate-cost-report:
+    name: Generate Cost Analysis Report
+    runs-on: ubuntu-latest
+    needs: gather-metrics
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+
+      - name: Download Metrics
+        uses: actions/download-artifact@v4
+        with:
+          name: raw-metrics
+
+      - name: Generate Cost Breakdown
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: |
+          node scripts/generate-cost-breakdown.js \
+            --period ${{ github.event.inputs.report_type || 'daily' }} \
+            --output cost-analysis.json
+
+      - name: Generate Cost Visualizations
+        run: |
+          node scripts/generate-cost-charts.js cost-analysis.json
+
+      - name: Upload Cost Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: cost-report
+          path: |
+            cost-analysis.json
+            cost-charts/
+
+  generate-timeline:
+    name: Generate Case Timeline
+    runs-on: ubuntu-latest
+    needs: gather-metrics
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+
+      - name: Fetch Timeline Data
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: |
+          node scripts/fetch-timeline-data.js
+
+      - name: Generate Interactive Timeline
+        run: |
+          node scripts/generate-timeline.js \
+            --output timeline.html
+
+      - name: Upload Timeline
+        uses: actions/upload-artifact@v4
+        with:
+          name: case-timeline
+          path: timeline.html
+
+  generate-document-index:
+    name: Generate Document Index
+    runs-on: ubuntu-latest
+    needs: gather-metrics
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+
+      - name: Fetch All Documents
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: |
+          node scripts/fetch-all-documents.js
+
+      - name: Generate Searchable Index
+        run: |
+          node scripts/generate-document-index.js \
+            --output document-index.json
+
+      - name: Generate Index HTML
+        run: |
+          node scripts/generate-index-html.js document-index.json
+
+      - name: Upload Document Index
+        uses: actions/upload-artifact@v4
+        with:
+          name: document-index
+          path: |
+            document-index.json
+            document-index.html
+
+  compile-daily-report:
+    name: Compile Daily Report
+    runs-on: ubuntu-latest
+    needs:
+      - gather-metrics
+      - generate-case-summary
+      - generate-privilege-report
+      - generate-cost-report
+      - generate-timeline
+      - generate-document-index
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+
+      - name: Download All Report Components
+        uses: actions/download-artifact@v4
+        with:
+          path: report-components
+
+      - name: Compile Comprehensive Report
+        run: |
+          node scripts/compile-daily-report.js \
+            --components report-components/ \
+            --output daily-report.html
+
+      - name: Generate PDF Report
+        run: |
+          npm install puppeteer
+          node scripts/generate-pdf-report.js daily-report.html
+
+      - name: Generate Executive Summary
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          node scripts/generate-executive-summary.js report-components/
+
+      - name: Upload Final Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: daily-discovery-report-${{ github.run_id }}
+          path: |
+            daily-report.html
+            daily-report.pdf
+            executive-summary.md
+          retention-days: 365
+
+  distribute-reports:
+    name: Distribute Reports
+    runs-on: ubuntu-latest
+    needs: compile-daily-report
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Download Final Report
+        uses: actions/download-artifact@v4
+        with:
+          name: daily-discovery-report-${{ github.run_id }}
+
+      - name: Send Email Report
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: ${{ secrets.SMTP_SERVER }}
+          server_port: ${{ secrets.SMTP_PORT }}
+          username: ${{ secrets.SMTP_USERNAME }}
+          password: ${{ secrets.SMTP_PASSWORD }}
+          subject: 'Daily Discovery Report - ${{ github.event.repository.name }}'
+          to: ${{ secrets.REPORT_RECIPIENTS }}
+          from: 'Discovery Pipeline <reports@discovery.legal>'
+          body: file://executive-summary.md
+          attachments: |
+            daily-report.pdf
+
+      - name: Post to Slack
+        uses: slackapi/slack-github-action@v1
+        with:
+          payload: |
+            {
+              "text": "📊 Daily Discovery Report Available",
+              "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "📊 Daily Discovery Report"
+                  }
+                },
+                {
+                  "type": "section",
+                  "fields": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Documents Processed:*\n${{ needs.gather-metrics.outputs.documents_processed }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Privileged Flagged:*\n${{ needs.gather-metrics.outputs.privileged_flagged }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Total Cost:*\n$${{ needs.gather-metrics.outputs.total_cost }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Active Cases:*\n${{ needs.gather-metrics.outputs.case_count }}"
+                    }
+                  ]
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+
+      - name: Upload to Vercel Dashboard
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          working-directory: ./reports-dashboard
+
+      - name: Store in Supabase
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: |
+          node scripts/store-report-in-supabase.js
+
+      - name: Commit Report to Repository
+        run: |
+          git config user.name "Reports Bot"
+          git config user.email "reports-bot@github.com"
+          mkdir -p reports/$(date +%Y/%m)
+          cp daily-report.pdf reports/$(date +%Y/%m)/report-$(date +%Y%m%d).pdf
+          git add reports/
+          git commit -m "docs: add daily report for $(date +%Y-%m-%d)" || echo "No changes"
+          git push || echo "Push failed"

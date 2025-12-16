@@ -1,0 +1,154 @@
+{
+  "mcpServers": {
+    "westlaw": {
+      "command": "python",
+      "args": ["westlaw-mcp-server.py"],
+      "env": {
+        "WESTLAW_API_KEY": "${WESTLAW_API_KEY}",
+        "WESTLAW_BASE_URL": "https://api.westlaw.com/v1"
+      },
+      "rateLimit": {
+        "requestsPerMinute": 100,
+        "burstSize": 20,
+        "retryAttempts": 3,
+        "retryDelayMs": 1000,
+        "exponentialBackoff": true
+      },
+      "cache": {
+        "enabled": true,
+        "ttlSeconds": 3600,
+        "maxEntries": 10000
+      },
+      "timeout": 30000,
+      "fallback": "mock"
+    },
+    "lexisnexis": {
+      "command": "python",
+      "args": ["lexisnexis-mcp-server.py"],
+      "env": {
+        "LEXISNEXIS_CLIENT_ID": "${LEXISNEXIS_CLIENT_ID}",
+        "LEXISNEXIS_CLIENT_SECRET": "${LEXISNEXIS_CLIENT_SECRET}",
+        "LEXISNEXIS_BASE_URL": "https://api.lexisnexis.com/oauth"
+      },
+      "rateLimit": {
+        "requestsPerMinute": 50,
+        "burstSize": 10,
+        "retryAttempts": 3,
+        "retryDelayMs": 1000
+      },
+      "cache": {
+        "enabled": true,
+        "ttlSeconds": 2592000,
+        "maxEntries": 50000
+      },
+      "timeout": 60000,
+      "fallback": "mock"
+    },
+    "gmail": {
+      "command": "python",
+      "args": ["gmail-discovery-mcp.py"],
+      "env": {
+        "GMAIL_CLIENT_ID": "${GMAIL_CLIENT_ID}",
+        "GMAIL_CLIENT_SECRET": "${GMAIL_CLIENT_SECRET}",
+        "GMAIL_REFRESH_TOKEN": "${GMAIL_REFRESH_TOKEN}"
+      },
+      "rateLimit": {
+        "requestsPerMinute": 500,
+        "burstSize": 100,
+        "retryAttempts": 2,
+        "retryDelayMs": 500
+      },
+      "cache": {
+        "enabled": true,
+        "ttlSeconds": 1800,
+        "maxEntries": 5000
+      },
+      "timeout": 20000,
+      "fallback": "mock"
+    },
+    "slack": {
+      "command": "python",
+      "args": ["slack-discovery-mcp.py"],
+      "env": {
+        "SLACK_BOT_TOKEN": "${SLACK_BOT_TOKEN}",
+        "SLACK_SIGNING_SECRET": "${SLACK_SIGNING_SECRET}"
+      },
+      "rateLimit": {
+        "requestsPerMinute": 300,
+        "burstSize": 60,
+        "retryAttempts": 2,
+        "retryDelayMs": 500
+      },
+      "cache": {
+        "enabled": true,
+        "ttlSeconds": 900,
+        "maxEntries": 2000
+      },
+      "timeout": 15000,
+      "fallback": "mock"
+    },
+    "supabase": {
+      "command": "python",
+      "args": ["supabase-mcp-server.py"],
+      "env": {
+        "SUPABASE_URL": "${SUPABASE_URL}",
+        "SUPABASE_SERVICE_KEY": "${SUPABASE_SERVICE_KEY}"
+      },
+      "rateLimit": {
+        "requestsPerMinute": 1000,
+        "burstSize": 200,
+        "retryAttempts": 3,
+        "retryDelayMs": 100
+      },
+      "cache": {
+        "enabled": true,
+        "ttlSeconds": 300,
+        "maxEntries": 20000
+      },
+      "timeout": 10000,
+      "fallback": "mock"
+    },
+    "github": {
+      "command": "python",
+      "args": ["github-mcp-server.py"],
+      "env": {
+        "GITHUB_TOKEN": "${GITHUB_TOKEN}",
+        "GITHUB_BASE_URL": "https://api.github.com"
+      },
+      "rateLimit": {
+        "requestsPerMinute": 5000,
+        "burstSize": 500,
+        "retryAttempts": 3,
+        "retryDelayMs": 100
+      },
+      "cache": {
+        "enabled": true,
+        "ttlSeconds": 600,
+        "maxEntries": 10000
+      },
+      "timeout": 15000,
+      "fallback": "mock"
+    }
+  },
+  "globalSettings": {
+    "logLevel": "info",
+    "logFile": "mcp-server.log",
+    "maxConcurrentRequests": 50,
+    "requestTimeout": 30000,
+    "healthCheckIntervalMs": 60000,
+    "metricsEnabled": true,
+    "complianceMode": true,
+    "auditLogging": true
+  },
+  "security": {
+    "validateSSL": true,
+    "allowedHosts": [
+      "api.westlaw.com",
+      "api.lexisnexis.com",
+      "www.googleapis.com",
+      "slack.com",
+      "api.github.com"
+    ],
+    "encryptionEnabled": true
+  }
+}

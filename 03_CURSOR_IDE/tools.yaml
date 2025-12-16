@@ -1,0 +1,403 @@
+# CodeRed Legal Discovery - Tools Configuration
+# Version: 1.0
+# Last Updated: December 16, 2025
+
+tools:
+  supabase_client:
+    name: "Supabase CodeRed Client"
+    description: "Connect to CodeRed database for logging, RAG, and cost tracking"
+    type: "database"
+    enabled: true
+
+    connection:
+      url: "${SUPABASE_URL}"
+      service_key: "${SUPABASE_SERVICE_KEY}"
+      schema: "codered"
+
+    capabilities:
+      - "Query agent runs"
+      - "Log new agent runs"
+      - "Fetch RAG embeddings"
+      - "Track costs"
+      - "Detect privilege"
+      - "Query case metadata"
+      - "Update task status"
+
+    tables:
+      - name: "agent_runs"
+        permissions: ["read", "write"]
+      - name: "embeddings"
+        permissions: ["read", "write"]
+      - name: "cases"
+        permissions: ["read"]
+      - name: "tasks"
+        permissions: ["read", "write"]
+      - name: "cost_tracking"
+        permissions: ["read", "write"]
+      - name: "privilege_flags"
+        permissions: ["read", "write"]
+
+    functions:
+      - name: "search_embeddings"
+        description: "Semantic search over case documents"
+        params: ["query", "case_id", "top_k", "threshold"]
+      - name: "ingest_document"
+        description: "Add document to RAG database"
+        params: ["title", "content", "source", "case_id"]
+      - name: "compute_similarity"
+        description: "Calculate similarity between documents"
+        params: ["doc_id_1", "doc_id_2"]
+
+    zones:
+      allowed: ["RED", "YELLOW", "GREEN"]
+      restrictions: "Respect zone permissions per agent"
+
+  rag_context_fetcher:
+    name: "RAG Context Fetcher"
+    description: "Automatically fetch relevant case context for AI queries"
+    type: "rag"
+    enabled: true
+
+    script: "cursor/rag-context-fetcher.py"
+
+    capabilities:
+      - "Detect case ID from file path"
+      - "Extract current selection or line"
+      - "Query embeddings database"
+      - "Include legal precedents"
+      - "Cache results"
+      - "Format for agent consumption"
+
+    configuration:
+      embedding_model: "text-embedding-3-small"
+      vector_dimensions: 1536
+      top_k: 5
+      similarity_threshold: 0.7
+      include_precedents: true
+      cache_enabled: true
+      cache_ttl: 3600
+
+    outputs:
+      - "Relevant case documents (top 5)"
+      - "Legal precedents (top 3)"
+      - "Prior analyses (if any)"
+      - "Document citations"
+
+    zones:
+      allowed: ["RED", "YELLOW", "GREEN"]
+      restrictions: "Filter by zone access of calling agent"
+
+  cost_tracker:
+    name: "Cost Tracker"
+    description: "Track and report AI usage costs"
+    type: "monitoring"
+    enabled: true
+
+    script: "cursor/cost-tracker.py"
+
+    capabilities:
+      - "Log query costs to Supabase"
+      - "Calculate running totals"
+      - "Generate cost reports"
+      - "Alert on budget thresholds"
+      - "Breakdown by agent/case/attorney"
+
+    thresholds:
+      daily_alert: 200.0
+      weekly_alert: 1000.0
+      monthly_alert: 5000.0
+      per_query_max: 10.0
+
+    reports:
+      - name: "today"
+        description: "Today's costs by agent"
+      - name: "week"
+        description: "This week's costs by case"
+      - name: "month"
+        description: "This month's costs by attorney"
+      - name: "case"
+        description: "Costs for specific case"
+
+    alerts:
+      email: "attorney@lawfirm.com"
+      slack: "#legal-tech-alerts"
+      threshold_reached: true
+      daily_summary: true
+
+    zones:
+      allowed: ["RED", "YELLOW", "GREEN"]
+      restrictions: "Log all zones, no restrictions"
+
+  privilege_detector:
+    name: "Privilege Detector"
+    description: "Automatically detect attorney-client privilege in documents"
+    type: "security"
+    enabled: true
+
+    script: "cursor/privilege-detector.py"
+
+    capabilities:
+      - "Keyword detection"
+      - "Pattern matching (attorney emails)"
+      - "Confidence scoring"
+      - "Zone recommendation"
+      - "Auto-flagging"
+      - "Audit logging"
+
+    keywords:
+      high_confidence:
+        - "attorney-client privilege"
+        - "privileged and confidential"
+        - "work product"
+        - "trial strategy"
+      medium_confidence:
+        - "attorney"
+        - "lawyer"
+        - "legal counsel"
+        - "confidential"
+      low_confidence:
+        - "legal"
+        - "counsel"
+
+    patterns:
+      - type: "email"
+        regex: "\\b\\w+@\\w+law\\.\\w+\\b"
+        weight: 0.3
+      - type: "header"
+        regex: "(?i)(from|to):\\s*.*\\b(attorney|lawyer|counsel)\\b"
+        weight: 0.4
+
+    scoring:
+      confidence_threshold: 0.5
+      high_threshold: 0.7
+      keyword_weight: 0.2
+      pattern_weight: 0.3
+      context_weight: 0.5
+
+    zones:
+      allowed: ["RED", "YELLOW", "GREEN"]
+      restrictions: "Can flag any document, regardless of zone"
+
+  westlaw_api:
+    name: "Westlaw Legal Research API"
+    description: "Access Westlaw for legal research and precedent analysis"
+    type: "external_api"
+    enabled: true
+
+    authentication:
+      type: "api_key"
+      key: "${WESTLAW_API_KEY}"
+
+    capabilities:
+      - "Case law search"
+      - "Statute research"
+      - "Precedent analysis"
+      - "Practice guides"
+      - "Secondary sources"
+
+    endpoints:
+      - name: "search_cases"
+        url: "https://api.westlaw.com/content/search"
+        method: "POST"
+      - name: "get_case"
+        url: "https://api.westlaw.com/content/cases/{cite}"
+        method: "GET"
+      - name: "search_statutes"
+        url: "https://api.westlaw.com/statutes"
+        method: "POST"
+
+    cost:
+      per_query: 0.50
+      daily_budget: 25.0
+      monthly_budget: 500.0
+
+    zones:
+      allowed: ["RED", "YELLOW", "GREEN"]
+      restrictions: "Available to Architect, Review, Evidence agents"
+
+  lexisnexis_api:
+    name: "LexisNexis Legal Research API"
+    description: "Access LexisNexis for legal research"
+    type: "external_api"
+    enabled: true
+
+    authentication:
+      type: "oauth"
+      credentials: "${LEXISNEXIS_API_KEY}"
+
+    capabilities:
+      - "Comprehensive case law"
+      - "Regulatory research"
+      - "Legal news"
+      - "Protégé AI research"
+
+    endpoints:
+      - name: "search_cases"
+        url: "https://api.lexisnexis.com/search/cases"
+        method: "POST"
+      - name: "search_statutes"
+        url: "https://api.lexisnexis.com/search/statutes"
+        method: "POST"
+
+    cost:
+      subscription: 100.0
+      unlimited_queries: true
+
+    zones:
+      allowed: ["RED", "YELLOW", "GREEN"]
+      restrictions: "Available to Architect, Review, Evidence agents"
+
+  gmail_discovery:
+    name: "Gmail Discovery Integration"
+    description: "Access Gmail for email discovery and thread reconstruction"
+    type: "external_api"
+    enabled: false
+
+    authentication:
+      type: "oauth"
+      service_account: "${GMAIL_SERVICE_ACCOUNT}"
+
+    capabilities:
+      - "Email search"
+      - "Thread reconstruction"
+      - "Attachment extraction"
+      - "Metadata extraction"
+      - "Privilege detection"
+
+    endpoints:
+      - name: "search_messages"
+        url: "https://gmail.googleapis.com/gmail/v1/users/me/messages"
+        method: "GET"
+      - name: "get_message"
+        url: "https://gmail.googleapis.com/gmail/v1/users/me/messages/{id}"
+        method: "GET"
+      - name: "get_thread"
+        url: "https://gmail.googleapis.com/gmail/v1/users/me/threads/{id}"
+        method: "GET"
+
+    privilege_keywords:
+      - "attorney"
+      - "lawyer"
+      - "legal counsel"
+      - "privileged"
+
+    zones:
+      allowed: ["RED", "YELLOW"]
+      restrictions: "Email content may be privileged"
+
+  github_integration:
+    name: "GitHub Version Control"
+    description: "Version control for legal configs, playbooks, templates"
+    type: "external_api"
+    enabled: true
+
+    authentication:
+      type: "token"
+      token: "${GITHUB_TOKEN}"
+
+    capabilities:
+      - "Store case templates"
+      - "Version control playbooks"
+      - "Collaboration on documents"
+      - "Issue tracking"
+
+    repositories:
+      - "codered-legal-tech"
+      - "case-templates"
+      - "legal-playbooks"
+
+    zones:
+      allowed: ["GREEN"]
+      restrictions: "NO privileged content on GitHub"
+
+# MCP Server Configuration
+mcp_servers:
+  supabase:
+    command: "python"
+    args: ["cursor/codered-client.py", "mcp"]
+    env:
+      SUPABASE_URL: "${SUPABASE_URL}"
+      SUPABASE_SERVICE_KEY: "${SUPABASE_SERVICE_KEY}"
+
+  rag:
+    command: "python"
+    args: ["cursor/rag-context-fetcher.py", "mcp"]
+    env:
+      SUPABASE_URL: "${SUPABASE_URL}"
+      SUPABASE_SERVICE_KEY: "${SUPABASE_SERVICE_KEY}"
+      OPENAI_API_KEY: "${OPENAI_API_KEY}"
+
+  cost_tracker:
+    command: "python"
+    args: ["cursor/cost-tracker.py", "mcp"]
+    env:
+      SUPABASE_URL: "${SUPABASE_URL}"
+      SUPABASE_SERVICE_KEY: "${SUPABASE_SERVICE_KEY}"
+
+  privilege_detector:
+    command: "python"
+    args: ["cursor/privilege-detector.py", "mcp"]
+    env:
+      SUPABASE_URL: "${SUPABASE_URL}"
+      SUPABASE_SERVICE_KEY: "${SUPABASE_SERVICE_KEY}"
+
+# Agent Tool Permissions
+agent_tool_permissions:
+  architect:
+    allowed_tools:
+      - "supabase_client"
+      - "rag_context_fetcher"
+      - "cost_tracker"
+      - "privilege_detector"
+      - "westlaw_api"
+      - "lexisnexis_api"
+    restricted_tools: []
+
+  code:
+    allowed_tools:
+      - "supabase_client"
+      - "rag_context_fetcher"
+      - "cost_tracker"
+      - "github_integration"
+    restricted_tools:
+      - "privilege_detector"
+
+  test:
+    allowed_tools:
+      - "supabase_client"
+      - "cost_tracker"
+    restricted_tools:
+      - "rag_context_fetcher"
+      - "privilege_detector"
+      - "westlaw_api"
+      - "lexisnexis_api"
+
+  review:
+    allowed_tools:
+      - "supabase_client"
+      - "rag_context_fetcher"
+      - "cost_tracker"
+      - "privilege_detector"
+      - "westlaw_api"
+      - "lexisnexis_api"
+    restricted_tools: []
+
+  evidence:
+    allowed_tools:
+      - "supabase_client"
+      - "rag_context_fetcher"
+      - "cost_tracker"
+      - "privilege_detector"
+      - "westlaw_api"
+      - "lexisnexis_api"
+      - "gmail_discovery"
+    restricted_tools: []
+
+  cynic:
+    allowed_tools:
+      - "supabase_client"
+      - "rag_context_fetcher"
+      - "cost_tracker"
+      - "privilege_detector"
+    restricted_tools:
+      - "github_integration"

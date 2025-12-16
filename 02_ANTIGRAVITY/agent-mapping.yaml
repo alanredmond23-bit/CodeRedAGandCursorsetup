@@ -1,0 +1,463 @@
+# Agent Mapping Configuration
+# Maps Antigravity agents to CrewAI tasks for bidirectional sync
+# Defines how agent outputs translate to CrewAI inputs and vice versa
+
+version: "1.0"
+
+# Agent to Task Mappings
+mappings:
+  # Orchestrator Agent Mapping
+  orchestrator:
+    antigravity:
+      agent_id: "orchestrator"
+      agent_name: "Legal Case Orchestrator"
+      agent_type: "coordination"
+
+    crewai:
+      task_id: "coordination_task"
+      task_name: "Case Coordination"
+      task_type: "orchestration"
+
+    # Input Mappings (CrewAI -> Antigravity)
+    input_mapping:
+      case_id:
+        source: "crew.task.context.case_id"
+        target: "antigrav.agent.params.case_id"
+        required: true
+        type: "string"
+
+      priority:
+        source: "crew.task.context.priority"
+        target: "antigrav.agent.params.priority"
+        required: false
+        type: "string"
+        default: "medium"
+        values: ["low", "medium", "high", "critical"]
+
+      assigned_agents:
+        source: "crew.task.context.agents"
+        target: "antigrav.orchestrator.managed_agents"
+        required: false
+        type: "array"
+        transform: "agent_list_to_ids"
+
+      deadline:
+        source: "crew.task.context.deadline"
+        target: "antigrav.agent.params.deadline"
+        required: false
+        type: "datetime"
+        format: "iso8601"
+
+      workflow_config:
+        source: "crew.task.config.workflow"
+        target: "antigrav.orchestrator.workflow"
+        required: false
+        type: "object"
+
+    # Output Mappings (Antigravity -> CrewAI)
+    output_mapping:
+      coordination_plan:
+        source: "antigrav.agent.output.plan"
+        target: "crew.task.result.coordination_plan"
+        required: true
+        type: "object"
+
+      task_assignments:
+        source: "antigrav.orchestrator.assignments"
+        target: "crew.task.result.assignments"
+        required: true
+        type: "array"
+
+      estimated_completion:
+        source: "antigrav.agent.output.eta"
+        target: "crew.task.result.estimated_completion"
+        required: false
+        type: "datetime"
+
+      resource_allocation:
+        source: "antigrav.orchestrator.resources"
+        target: "crew.task.result.resources"
+        required: false
+        type: "object"
+
+      status_updates:
+        source: "antigrav.agent.status_log"
+        target: "crew.task.events.status_updates"
+        required: false
+        type: "array"
+
+    # Sync Configuration
+    sync:
+      direction: "bidirectional"
+      priority: "crew"  # CrewAI changes override Antigravity
+      interval: 30
+      batch_enabled: false  # Orchestrator updates are immediate
+
+  # Researcher Agent Mapping
+  researcher:
+    antigravity:
+      agent_id: "researcher"
+      agent_name: "Legal Research Specialist"
+      agent_type: "research"
+
+    crewai:
+      task_id: "research_task"
+      task_name: "Legal Research"
+      task_type: "analysis"
+
+    # Input Mappings (CrewAI -> Antigravity)
+    input_mapping:
+      research_query:
+        source: "crew.task.description"
+        target: "antigrav.agent.params.query"
+        required: true
+        type: "string"
+
+      document_ids:
+        source: "crew.task.context.documents"
+        target: "antigrav.agent.params.document_ids"
+        required: false
+        type: "array"
+
+      research_depth:
+        source: "crew.task.config.depth"
+        target: "antigrav.agent.params.max_iterations"
+        required: false
+        type: "integer"
+        default: 50
+        transform: "depth_to_iterations"
+
+      search_scope:
+        source: "crew.task.config.scope"
+        target: "antigrav.agent.params.search_scope"
+        required: false
+        type: "array"
+        default: ["case_law", "statutes", "regulations"]
+
+      citation_required:
+        source: "crew.task.config.citations"
+        target: "antigrav.agent.params.verify_citations"
+        required: false
+        type: "boolean"
+        default: true
+
+      time_range:
+        source: "crew.task.config.time_range"
+        target: "antigrav.agent.params.time_filter"
+        required: false
+        type: "object"
+
+    # Output Mappings (Antigravity -> CrewAI)
+    output_mapping:
+      research_findings:
+        source: "antigrav.agent.output.findings"
+        target: "crew.task.result.findings"
+        required: true
+        type: "array"
+
+      document_analysis:
+        source: "antigrav.agent.output.analysis"
+        target: "crew.task.result.analysis"
+        required: true
+        type: "object"
+
+      citations:
+        source: "antigrav.agent.output.citations"
+        target: "crew.task.result.citations"
+        required: false
+        type: "array"
+
+      precedents:
+        source: "antigrav.agent.output.precedents"
+        target: "crew.task.result.precedents"
+        required: false
+        type: "array"
+
+      evidence_correlations:
+        source: "antigrav.agent.output.correlations"
+        target: "crew.task.result.correlations"
+        required: false
+        type: "object"
+
+      confidence_score:
+        source: "antigrav.agent.output.confidence"
+        target: "crew.task.result.confidence"
+        required: false
+        type: "float"
+        range: [0.0, 1.0]
+
+      source_documents:
+        source: "antigrav.agent.output.sources"
+        target: "crew.task.result.sources"
+        required: false
+        type: "array"
+
+    # Sync Configuration
+    sync:
+      direction: "bidirectional"
+      priority: "crew"
+      interval: 30
+      batch_enabled: true
+      batch_size: 100
+
+  # Executor Agent Mapping
+  executor:
+    antigravity:
+      agent_id: "executor"
+      agent_name: "Legal Action Executor"
+      agent_type: "execution"
+
+    crewai:
+      task_id: "execution_task"
+      task_name: "Action Execution"
+      task_type: "implementation"
+
+    # Input Mappings (CrewAI -> Antigravity)
+    input_mapping:
+      action_plan:
+        source: "crew.task.description"
+        target: "antigrav.agent.params.action_plan"
+        required: true
+        type: "object"
+
+      template_id:
+        source: "crew.task.context.template"
+        target: "antigrav.agent.params.template_id"
+        required: false
+        type: "string"
+
+      output_format:
+        source: "crew.task.config.format"
+        target: "antigrav.agent.params.output_format"
+        required: false
+        type: "string"
+        default: "pdf"
+        values: ["pdf", "docx", "html", "txt"]
+
+      data_inputs:
+        source: "crew.task.context.data"
+        target: "antigrav.agent.params.data"
+        required: false
+        type: "object"
+
+      approval_required:
+        source: "crew.task.config.requires_approval"
+        target: "antigrav.agent.params.approval_required"
+        required: false
+        type: "boolean"
+        default: false
+
+      notification_config:
+        source: "crew.task.config.notifications"
+        target: "antigrav.agent.params.notifications"
+        required: false
+        type: "object"
+
+    # Output Mappings (Antigravity -> CrewAI)
+    output_mapping:
+      execution_result:
+        source: "antigrav.agent.output.result"
+        target: "crew.task.result.execution"
+        required: true
+        type: "object"
+
+      generated_documents:
+        source: "antigrav.agent.output.documents"
+        target: "crew.task.result.documents"
+        required: false
+        type: "array"
+
+      actions_completed:
+        source: "antigrav.agent.output.actions"
+        target: "crew.task.result.actions"
+        required: false
+        type: "array"
+
+      errors:
+        source: "antigrav.agent.output.errors"
+        target: "crew.task.result.errors"
+        required: false
+        type: "array"
+
+      execution_time:
+        source: "antigrav.agent.metrics.execution_time"
+        target: "crew.task.metrics.duration"
+        required: false
+        type: "float"
+
+      storage_locations:
+        source: "antigrav.agent.output.storage_paths"
+        target: "crew.task.result.file_paths"
+        required: false
+        type: "array"
+
+    # Sync Configuration
+    sync:
+      direction: "bidirectional"
+      priority: "crew"
+      interval: 30
+      batch_enabled: true
+      batch_size: 50
+
+# Transform Functions
+transforms:
+  # Convert depth level to iteration count
+  depth_to_iterations:
+    description: "Convert research depth (shallow/medium/deep) to iteration count"
+    mapping:
+      shallow: 20
+      medium: 50
+      deep: 100
+      exhaustive: 200
+
+  # Convert agent list to IDs
+  agent_list_to_ids:
+    description: "Extract agent IDs from agent objects"
+    function: "lambda agents: [a.get('id') for a in agents]"
+
+  # Convert status codes
+  status_mapping:
+    description: "Map between CrewAI and Antigravity status codes"
+    crew_to_antigrav:
+      pending: "queued"
+      running: "active"
+      completed: "finished"
+      failed: "error"
+      cancelled: "stopped"
+    antigrav_to_crew:
+      queued: "pending"
+      active: "running"
+      finished: "completed"
+      error: "failed"
+      stopped: "cancelled"
+
+# Status Synchronization
+status_sync:
+  # Agent Status Fields
+  agent_status:
+    - field: "status"
+      type: "string"
+      sync: true
+      transform: "status_mapping"
+
+    - field: "progress"
+      type: "float"
+      sync: true
+      range: [0.0, 1.0]
+
+    - field: "current_action"
+      type: "string"
+      sync: true
+
+    - field: "last_updated"
+      type: "datetime"
+      sync: true
+      format: "iso8601"
+
+    - field: "error_message"
+      type: "string"
+      sync: true
+      condition: "status == 'error'"
+
+  # Task Status Fields
+  task_status:
+    - field: "status"
+      type: "string"
+      sync: true
+      transform: "status_mapping"
+
+    - field: "started_at"
+      type: "datetime"
+      sync: true
+      format: "iso8601"
+
+    - field: "completed_at"
+      type: "datetime"
+      sync: true
+      format: "iso8601"
+
+    - field: "retries"
+      type: "integer"
+      sync: true
+
+    - field: "result_preview"
+      type: "string"
+      sync: true
+      max_length: 500
+
+# Cost Tracking Sync
+cost_sync:
+  enabled: true
+  granularity: "per_agent"
+
+  fields:
+    - field: "tokens_used"
+      source: "antigrav.agent.metrics.tokens"
+      target: "crew.task.metrics.tokens"
+      type: "integer"
+      sync: true
+
+    - field: "cost_usd"
+      source: "antigrav.agent.metrics.cost"
+      target: "crew.task.metrics.cost"
+      type: "float"
+      sync: true
+
+    - field: "api_calls"
+      source: "antigrav.agent.metrics.api_calls"
+      target: "crew.task.metrics.api_calls"
+      type: "integer"
+      sync: true
+
+    - field: "execution_time"
+      source: "antigrav.agent.metrics.execution_time"
+      target: "crew.task.metrics.duration"
+      type: "float"
+      sync: true
+
+# Error Handling
+error_handling:
+  # Mapping Errors
+  on_mapping_error:
+    strategy: "log_and_skip"  # log_and_skip, fail_sync, use_default
+    log_level: "WARNING"
+
+  # Transform Errors
+  on_transform_error:
+    strategy: "use_default"
+    log_level: "ERROR"
+    fallback_value: null
+
+  # Sync Errors
+  on_sync_error:
+    strategy: "retry"
+    max_retries: 3
+    retry_delay: 5
+    log_level: "ERROR"
+
+# Validation Rules
+validation:
+  # Input Validation
+  validate_inputs: true
+  strict_mode: false  # If true, reject invalid inputs; if false, use defaults
+
+  # Output Validation
+  validate_outputs: true
+  required_fields_must_exist: true
+
+  # Type Validation
+  enforce_types: true
+  allow_type_coercion: true
+
+# Performance Optimization
+optimization:
+  # Lazy Loading
+  lazy_load_mappings: true
+
+  # Caching
+  cache_transforms: true
+  cache_ttl: 3600  # seconds
+
+  # Parallel Processing
+  parallel_mapping: true
+  max_workers: 5

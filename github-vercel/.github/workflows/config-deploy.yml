@@ -1,0 +1,236 @@
+name: Configuration Deployment
+
+on:
+  push:
+    paths:
+      - 'config/**'
+      - 'env/**'
+      - '.env.example'
+  pull_request:
+    paths:
+      - 'config/**'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        type: choice
+        options:
+          - development
+          - staging
+          - production
+        default: 'staging'
+
+env:
+  CONFIG_VERSION: '1.0.0'
+
+jobs:
+  validate-configs:
+    name: Validate Configuration Files
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+
+      - name: Install Validation Tools
+        run: |
+          npm ci
+          npm install ajv yaml-validator dotenv
+
+      - name: Validate YAML Configs
+        run: |
+          node scripts/validate-yaml-configs.js config/
+
+      - name: Validate JSON Schemas
+        run: |
+          node scripts/validate-json-schemas.js config/
+
+      - name: Validate Environment Variables
+        run: |
+          node scripts/validate-env-vars.js
+
+      - name: Check for Secrets Exposure
+        run: |
+          node scripts/check-secrets-exposure.js config/
+
+  deploy-to-supabase:
+    name: Deploy Supabase Configurations
+    runs-on: ubuntu-latest
+    needs: validate-configs
+    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+
+      - name: Install Supabase CLI
+        run: |
+          npm install -g supabase
+
+      - name: Deploy Database Migrations
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: |
+          supabase link --project-ref ${{ secrets.SUPABASE_PROJECT_REF }}
+          supabase db push
+
+      - name: Update Edge Functions
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          supabase functions deploy --project-ref ${{ secrets.SUPABASE_PROJECT_REF }}
+
+      - name: Update RLS Policies
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: |
+          node scripts/deploy-rls-policies.js
+
+  deploy-to-vercel:
+    name: Deploy Vercel Environment Variables
+    runs-on: ubuntu-latest
+    needs: validate-configs
+    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install Vercel CLI
+        run: npm install -g vercel
+
+      - name: Deploy Environment Variables
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          node scripts/deploy-vercel-env.js \
+            --environment ${{ github.event.inputs.environment || 'production' }}
+
+  update-github-secrets:
+    name: Update GitHub Secrets
+    runs-on: ubuntu-latest
+    needs: validate-configs
+    if: github.event_name == 'workflow_dispatch'
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Update Repository Secrets
+        uses: actions/github-script@v7
+        env:
+          ENCRYPTION_KEY: ${{ secrets.REPO_ENCRYPTION_KEY }}
+        with:
+          github-token: ${{ secrets.REPO_PAT }}
+          script: |
+            const fs = require('fs');
+            const sodium = require('libsodium-wrappers');
+
+            await sodium.ready;
+
+            const publicKeyResponse = await github.rest.actions.getRepoPublicKey({
+              owner: context.repo.owner,
+              repo: context.repo.repo
+            });
+
+            const publicKey = publicKeyResponse.data.key;
+            const publicKeyId = publicKeyResponse.data.key_id;
+
+            // Function to encrypt secret
+            function encryptSecret(secret) {
+              const binkey = sodium.from_base64(publicKey, sodium.base64_variants.ORIGINAL);
+              const binsec = sodium.from_string(secret);
+              const encBytes = sodium.crypto_box_seal(binsec, binkey);
+              return sodium.to_base64(encBytes, sodium.base64_variants.ORIGINAL);
+            }
+
+            // Update secrets from config
+            const config = JSON.parse(fs.readFileSync('config/secrets.json', 'utf8'));
+
+            for (const [name, value] of Object.entries(config)) {
+              await github.rest.actions.createOrUpdateRepoSecret({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                secret_name: name,
+                encrypted_value: encryptSecret(value),
+                key_id: publicKeyId
+              });
+              console.log(`Updated secret: ${name}`);
+            }
+
+  test-configurations:
+    name: Test Deployed Configurations
+    runs-on: ubuntu-latest
+    needs: [deploy-to-supabase, deploy-to-vercel]
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+
+      - name: Test Supabase Connection
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: |
+          node scripts/test-supabase-connection.js
+
+      - name: Test API Endpoints
+        env:
+          VERCEL_URL: ${{ secrets.VERCEL_URL }}
+        run: |
+          node scripts/test-api-endpoints.js
+
+      - name: Test Environment Variables
+        run: |
+          node scripts/test-env-vars.js
+
+      - name: Generate Test Report
+        run: |
+          node scripts/generate-config-test-report.js
+
+  rollback:
+    name: Rollback on Failure
+    runs-on: ubuntu-latest
+    needs: test-configurations
+    if: failure()
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Rollback Supabase
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          supabase db reset --linked
+
+      - name: Notify Team
+        uses: slackapi/slack-github-action@v1
+        with:
+          payload: |
+            {
+              "text": "⚠️ Config deployment failed - rollback initiated"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK

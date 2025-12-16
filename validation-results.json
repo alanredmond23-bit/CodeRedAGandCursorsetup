@@ -1,0 +1,60 @@
+{
+  "timestamp": "2025-12-16T08:49:51.542051",
+  "components": {
+    "00_ARCHIVE": {
+      "exists": true,
+      "file_count": 46
+    },
+    "01_CLAUDE_CODE_TERMINAL": {
+      "exists": true,
+      "file_count": 70
+    },
+    "02_ANTIGRAVITY": {
+      "exists": true,
+      "file_count": 17
+    },
+    "03_CURSOR_IDE": {
+      "exists": true,
+      "file_count": 15
+    },
+    "04_GITHUB_ACTIONS_VERCEL": {
+      "exists": true,
+      "file_count": 22
+    },
+    "05_SUPABASE_INTEGRATION": {
+      "exists": true,
+      "file_count": 36
+    }
+  },
+  "total_files": 202,
+  "total_lines": 99908,
+  "checks_passed": 5,
+  "checks_failed": 1,
+  "status": "INCOMPLETE",
+  "code_stats": {
+    "Python": {
+      "files": 73,
+      "lines": 25278
+    },
+    "SQL": {
+      "files": 15,
+      "lines": 6964
+    },
+    "JavaScript": {
+      "files": 9,
+      "lines": 2320
+    },
+    "JSON": {
+      "files": 13,
+      "lines": 2479
+    },
+    "Markdown": {
+      "files": 79,
+      "lines": 58122
+    },
+    "YAML": {
+      "files": 9,
+      "lines": 2759
+    }
+  }
+}

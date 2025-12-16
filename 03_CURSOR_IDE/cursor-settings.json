@@ -1,0 +1,264 @@
+{
+  "system": "CodeGreen",
+  "description": "Cursor IDE Configuration for Generic Software Development",
+  "ideName": "Cursor",
+  "environment": "development",
+
+  "agents": {
+    "enabled": true,
+    "count": 5,
+    "autoLoad": true,
+    "context": "auto",
+    "refreshInterval": 30
+  },
+
+  "keyboardShortcuts": {
+    "Cmd+Shift+A": {
+      "agent": "Code Analysis Agent",
+      "action": "Analyze current file for issues, security, complexity",
+      "modeKey": "analysis",
+      "context": "current-file"
+    },
+    "Cmd+Shift+C": {
+      "agent": "Coordinator Agent",
+      "action": "Route request to appropriate specialist agent",
+      "modeKey": "coordinator",
+      "context": "project"
+    },
+    "Cmd+Shift+T": {
+      "agent": "Task Agent",
+      "action": "Manage PRs, issues, tasks from GitHub",
+      "modeKey": "tasks",
+      "context": "project"
+    },
+    "Cmd+Shift+S": {
+      "agent": "Architecture Agent",
+      "action": "Design systems, APIs, migrations",
+      "modeKey": "strategy",
+      "context": "project"
+    },
+    "Cmd+Shift+R": {
+      "agent": "Test Agent",
+      "action": "Generate tests, check coverage, run test suite",
+      "modeKey": "testing",
+      "context": "current-file"
+    },
+    "Cmd+Shift+P": {
+      "agent": "Performance Agent",
+      "action": "Profile and optimize code performance",
+      "modeKey": "performance",
+      "context": "project"
+    }
+  },
+
+  "inlineFeatures": {
+    "codeMetrics": {
+      "enabled": true,
+      "display": "inline",
+      "metrics": [
+        "complexity",
+        "coverage",
+        "issues_count",
+        "performance_score"
+      ],
+      "updateFrequency": "on-save"
+    },
+    "suggestions": {
+      "enabled": true,
+      "showAs": "quick-fix",
+      "agents": ["Code Analysis", "Test Agent"],
+      "threshold": "medium-priority"
+    },
+    "testCoverage": {
+      "enabled": true,
+      "display": "line-background",
+      "colors": {
+        "covered": "green",
+        "uncovered": "red",
+        "partial": "yellow"
+      }
+    },
+    "diagnostics": {
+      "enabled": true,
+      "levels": ["error", "warning", "info"],
+      "fromAgents": true
+    }
+  },
+
+  "contextInjection": {
+    "enabled": true,
+    "autoInject": true,
+    "sources": [
+      "supabase-project-metadata",
+      "recent-commits",
+      "open-prs",
+      "test-coverage",
+      "performance-metrics"
+    ],
+    "refreshInterval": 30,
+    "showInSidebar": true
+  },
+
+  "workspaceSettings": {
+    "rootPath": ".",
+    "projectType": "auto-detect",
+    "language": "auto",
+    "framework": "auto",
+    "linters": {
+      "eslint": true,
+      "pylint": true,
+      "prettier": true
+    },
+    "testing": {
+      "framework": "auto-detect",
+      "coverageThreshold": 80,
+      "runOnSave": false
+    }
+  },
+
+  "displays": {
+    "sidebar": {
+      "panels": [
+        "CodeGreen Status",
+        "Project Overview",
+        "Open Tasks",
+        "Metrics Dashboard",
+        "Agent Suggestions"
+      ],
+      "width": 300
+    },
+    "statusBar": {
+      "items": [
+        "agent-status",
+        "test-coverage",
+        "last-issue",
+        "sync-status"
+      ]
+    },
+    "minimap": {
+      "enabled": true,
+      "showIssues": true,
+      "colors": {
+        "error": "#ff0000",
+        "warning": "#ffaa00",
+        "info": "#0088ff"
+      }
+    }
+  },
+
+  "mcpServers": {
+    "github": {
+      "enabled": true,
+      "endpoint": "github-mcp-server",
+      "auth": "GITHUB_TOKEN",
+      "features": ["issues", "prs", "workflows", "repos"]
+    },
+    "npm": {
+      "enabled": true,
+      "endpoint": "npm-mcp-server",
+      "features": ["search", "info", "vulnerabilities"]
+    },
+    "cicd": {
+      "enabled": true,
+      "endpoint": "cicd-mcp-server",
+      "platforms": ["github-actions"],
+      "features": ["status", "logs", "deploy"]
+    },
+    "monitoring": {
+      "enabled": true,
+      "endpoint": "monitoring-mcp-server",
+      "platforms": ["sentry", "datadog"],
+      "features": ["errors", "metrics", "logs"]
+    },
+    "documentation": {
+      "enabled": true,
+      "endpoint": "docs-mcp-server",
+      "features": ["swagger", "openapi"]
+    },
+    "codeSearch": {
+      "enabled": true,
+      "endpoint": "code-search-mcp-server",
+      "features": ["semantic", "ast"]
+    }
+  },
+
+  "agentBehavior": {
+    "codeAnalysis": {
+      "enabled": true,
+      "runOn": ["save", "manual"],
+      "includeSecurityChecks": true,
+      "includeComplexityAnalysis": true,
+      "autoFix": "prompt",
+      "confidence": 0.8
+    },
+    "testAgent": {
+      "enabled": true,
+      "autoGenerateTests": false,
+      "suggestTestCases": true,
+      "runTests": "manual",
+      "checkCoverage": "on-save"
+    },
+    "performanceAgent": {
+      "enabled": true,
+      "monitor": "continuous",
+      "alertThreshold": 15,
+      "profiling": "on-request"
+    },
+    "architectureAgent": {
+      "enabled": true,
+      "reviewOnChange": false,
+      "suggestPatterns": true
+    }
+  },
+
+  "costTracking": {
+    "enabled": true,
+    "display": "per-agent-per-day",
+    "currency": "USD",
+    "alerts": {
+      "enabled": true,
+      "threshold": 100,
+      "notifyAt": [50, 75, 90]
+    }
+  },
+
+  "themesAndDisplay": {
+    "theme": "auto",
+    "fontFamily": "Monaco, Menlo, Ubuntu Mono",
+    "fontSize": 13,
+    "lineHeight": 1.6,
+    "renderWhitespace": "selection",
+    "highlightSyntax": true
+  },
+
+  "fileAssociations": {
+    "*.test.js": "test",
+    "*.spec.py": "test",
+    "*.md": "documentation",
+    "*.json": "config"
+  },
+
+  "excludePatterns": [
+    "**/node_modules/**",
+    "**/.git/**",
+    "**/dist/**",
+    "**/.env*"
+  ],
+
+  "quickStart": {
+    "setupTimeMinutes": 5,
+    "steps": [
+      "Load .codegreen-settings.json",
+      "Configure GitHub token",
+      "Enable keyboard shortcuts",
+      "Test each agent (Cmd+Shift+[A/C/T/S/R/P])",
+      "Verify metrics display inline"
+    ]
+  },
+
+  "debugging": {
+    "logLevel": "info",
+    "agentDebug": false,
+    "modeKey": "Cmd+Shift+D"
+  }
+}

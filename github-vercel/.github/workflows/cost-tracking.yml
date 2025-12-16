@@ -1,0 +1,243 @@
+name: Cost Tracking & Budget Alerts
+
+on:
+  schedule:
+    # Run every 6 hours
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+  workflow_run:
+    workflows: ["Discovery Document Pipeline"]
+    types:
+      - completed
+
+env:
+  BUDGET_DAILY: 500 # USD
+  BUDGET_WEEKLY: 2500 # USD
+  BUDGET_MONTHLY: 10000 # USD
+  ALERT_THRESHOLD_PERCENT: 80
+
+jobs:
+  calculate-costs:
+    name: Calculate API & Processing Costs
+    runs-on: ubuntu-latest
+    outputs:
+      daily_cost: ${{ steps.daily.outputs.cost }}
+      weekly_cost: ${{ steps.weekly.outputs.cost }}
+      monthly_cost: ${{ steps.monthly.outputs.cost }}
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+
+      - name: Install Dependencies
+        run: |
+          npm ci
+          npm install @supabase/supabase-js date-fns
+
+      - name: Fetch Cost Data from Supabase
+        id: fetch
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: |
+          node scripts/fetch-cost-data.js
+
+      - name: Calculate Daily Costs
+        id: daily
+        run: |
+          cost=$(node scripts/calculate-period-cost.js --period daily)
+          echo "cost=$cost" >> $GITHUB_OUTPUT
+          echo "📊 Daily Cost: $$cost"
+
+      - name: Calculate Weekly Costs
+        id: weekly
+        run: |
+          cost=$(node scripts/calculate-period-cost.js --period weekly)
+          echo "cost=$cost" >> $GITHUB_OUTPUT
+          echo "📊 Weekly Cost: $$cost"
+
+      - name: Calculate Monthly Costs
+        id: monthly
+        run: |
+          cost=$(node scripts/calculate-period-cost.js --period monthly)
+          echo "cost=$cost" >> $GITHUB_OUTPUT
+          echo "📊 Monthly Cost: $$cost"
+
+      - name: Generate Cost Breakdown
+        run: |
+          node scripts/generate-cost-breakdown.js > cost-breakdown.json
+          cat cost-breakdown.json
+
+      - name: Upload Cost Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: cost-report-${{ github.run_id }}
+          path: |
+            cost-breakdown.json
+            cost-details.json
+
+  budget-alerts:
+    name: Budget Monitoring & Alerts
+    runs-on: ubuntu-latest
+    needs: calculate-costs
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Check Daily Budget
+        id: daily_check
+        run: |
+          daily_cost=${{ needs.calculate-costs.outputs.daily_cost }}
+          budget=${{ env.BUDGET_DAILY }}
+          threshold=$(echo "$budget * 0.${{ env.ALERT_THRESHOLD_PERCENT }}" | bc)
+
+          if (( $(echo "$daily_cost > $threshold" | bc -l) )); then
+            echo "alert=true" >> $GITHUB_OUTPUT
+            echo "⚠️ Daily cost ($daily_cost) exceeds threshold ($threshold)"
+          fi
+
+      - name: Check Weekly Budget
+        id: weekly_check
+        run: |
+          weekly_cost=${{ needs.calculate-costs.outputs.weekly_cost }}
+          budget=${{ env.BUDGET_WEEKLY }}
+          threshold=$(echo "$budget * 0.${{ env.ALERT_THRESHOLD_PERCENT }}" | bc)
+
+          if (( $(echo "$weekly_cost > $threshold" | bc -l) )); then
+            echo "alert=true" >> $GITHUB_OUTPUT
+            echo "⚠️ Weekly cost ($weekly_cost) exceeds threshold ($threshold)"
+          fi
+
+      - name: Check Monthly Budget
+        id: monthly_check
+        run: |
+          monthly_cost=${{ needs.calculate-costs.outputs.monthly_cost }}
+          budget=${{ env.BUDGET_MONTHLY }}
+          threshold=$(echo "$budget * 0.${{ env.ALERT_THRESHOLD_PERCENT }}" | bc -l)
+
+          if (( $(echo "$monthly_cost > $threshold" | bc -l) )); then
+            echo "alert=true" >> $GITHUB_OUTPUT
+            echo "⚠️ Monthly cost ($monthly_cost) exceeds threshold ($threshold)"
+          fi
+
+      - name: Send Slack Alert (Budget Warning)
+        if: steps.daily_check.outputs.alert == 'true' || steps.weekly_check.outputs.alert == 'true' || steps.monthly_check.outputs.alert == 'true'
+        uses: slackapi/slack-github-action@v1
+        with:
+          payload: |
+            {
+              "text": "💰 Budget Alert: Discovery Pipeline Costs",
+              "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "⚠️ Budget Threshold Alert"
+                  }
+                },
+                {
+                  "type": "section",
+                  "fields": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Daily Cost:*\n$${{ needs.calculate-costs.outputs.daily_cost }} / $${{ env.BUDGET_DAILY }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Weekly Cost:*\n$${{ needs.calculate-costs.outputs.weekly_cost }} / $${{ env.BUDGET_WEEKLY }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Monthly Cost:*\n$${{ needs.calculate-costs.outputs.monthly_cost }} / $${{ env.BUDGET_MONTHLY }}"
+                    }
+                  ]
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+
+      - name: Create Budget Issue (Critical)
+        if: needs.calculate-costs.outputs.monthly_cost > env.BUDGET_MONTHLY
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: '🚨 CRITICAL: Monthly Budget Exceeded',
+              body: `## Budget Overrun Alert\n\n**Monthly Cost:** $$${{ needs.calculate-costs.outputs.monthly_cost }}\n**Budget:** $$${{ env.BUDGET_MONTHLY }}\n**Overrun:** $$${{ needs.calculate-costs.outputs.monthly_cost - env.BUDGET_MONTHLY }}\n\n**Immediate Action Required:**\n- [ ] Review current processing jobs\n- [ ] Pause non-critical pipelines\n- [ ] Investigate cost spike\n- [ ] Update budget or optimize workflows\n\n**Cost Breakdown:** See attached artifacts`,
+              labels: ['budget-critical', 'urgent', 'cost-alert'],
+              assignees: ['legal-ops-team']
+            });
+
+  cost-optimization:
+    name: Cost Optimization Recommendations
+    runs-on: ubuntu-latest
+    needs: calculate-costs
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+
+      - name: Analyze Cost Patterns
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: |
+          node scripts/analyze-cost-patterns.js
+
+      - name: Generate Optimization Recommendations
+        run: |
+          node scripts/generate-optimization-tips.js > optimization-recommendations.md
+
+      - name: Upload Recommendations
+        uses: actions/upload-artifact@v4
+        with:
+          name: cost-optimization-${{ github.run_id }}
+          path: optimization-recommendations.md
+
+  update-cost-dashboard:
+    name: Update Cost Dashboard
+    runs-on: ubuntu-latest
+    needs: [calculate-costs, budget-alerts]
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Generate Cost Dashboard
+        env:
+          DAILY_COST: ${{ needs.calculate-costs.outputs.daily_cost }}
+          WEEKLY_COST: ${{ needs.calculate-costs.outputs.weekly_cost }}
+          MONTHLY_COST: ${{ needs.calculate-costs.outputs.monthly_cost }}
+        run: |
+          node scripts/generate-cost-dashboard.js
+
+      - name: Deploy Cost Dashboard to Vercel
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_COST_PROJECT_ID }}
+          working-directory: ./cost-dashboard
+          vercel-args: '--prod'
+
+      - name: Store Historical Costs
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: |
+          node scripts/store-cost-history.js

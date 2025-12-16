@@ -1,0 +1,389 @@
+name: Integration Tests
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - develop
+  workflow_dispatch:
+  schedule:
+    # Run integration tests daily at 2 AM
+    - cron: '0 2 * * *'
+
+env:
+  NODE_VERSION: '20.x'
+  TEST_TIMEOUT: 300000 # 5 minutes
+
+jobs:
+  test-supabase-integration:
+    name: Test Supabase Integration
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install Dependencies
+        run: |
+          npm ci
+          npm install @supabase/supabase-js jest
+
+      - name: Test Database Connection
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: |
+          npm run test:supabase-connection
+
+      - name: Test CRUD Operations
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: |
+          npm run test:supabase-crud
+
+      - name: Test Vector Search
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          npm run test:vector-search
+
+      - name: Test RLS Policies
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: |
+          npm run test:rls-policies
+
+      - name: Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: supabase-test-results
+          path: test-results/supabase-*.xml
+
+  test-openai-integration:
+    name: Test OpenAI Integration
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install Dependencies
+        run: |
+          npm ci
+          npm install openai jest
+
+      - name: Test API Connection
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          npm run test:openai-connection
+
+      - name: Test Embeddings Generation
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          npm run test:openai-embeddings
+
+      - name: Test Chat Completions
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          npm run test:openai-chat
+
+      - name: Test Token Usage Tracking
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          npm run test:openai-tokens
+
+      - name: Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: openai-test-results
+          path: test-results/openai-*.xml
+
+  test-anthropic-integration:
+    name: Test Anthropic Integration
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install Dependencies
+        run: |
+          npm ci
+          npm install @anthropic-ai/sdk jest
+
+      - name: Test API Connection
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          npm run test:anthropic-connection
+
+      - name: Test Message Streaming
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          npm run test:anthropic-streaming
+
+      - name: Test Document Analysis
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          npm run test:anthropic-analysis
+
+      - name: Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: anthropic-test-results
+          path: test-results/anthropic-*.xml
+
+  test-document-processing:
+    name: Test Document Processing Pipeline
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install Dependencies
+        run: |
+          npm ci
+          npm install pdf-parse mammoth tesseract.js jest
+
+      - name: Test PDF Processing
+        run: |
+          npm run test:pdf-processing
+
+      - name: Test DOCX Processing
+        run: |
+          npm run test:docx-processing
+
+      - name: Test OCR Processing
+        run: |
+          npm run test:ocr-processing
+
+      - name: Test Text Extraction
+        run: |
+          npm run test:text-extraction
+
+      - name: Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: document-processing-results
+          path: test-results/document-*.xml
+
+  test-privilege-detection:
+    name: Test Privilege Detection
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install Dependencies
+        run: |
+          npm ci
+          npm install openai @anthropic-ai/sdk natural jest
+
+      - name: Test Keyword Detection
+        run: |
+          npm run test:privilege-keywords
+
+      - name: Test AI Detection
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          npm run test:privilege-ai
+
+      - name: Test Confidence Scoring
+        run: |
+          npm run test:privilege-confidence
+
+      - name: Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: privilege-detection-results
+          path: test-results/privilege-*.xml
+
+  test-cost-calculation:
+    name: Test Cost Calculation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install Dependencies
+        run: |
+          npm ci
+          npm install jest
+
+      - name: Test Token Counting
+        run: |
+          npm run test:token-counting
+
+      - name: Test Cost Calculation
+        run: |
+          npm run test:cost-calculation
+
+      - name: Test Budget Tracking
+        run: |
+          npm run test:budget-tracking
+
+      - name: Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cost-calculation-results
+          path: test-results/cost-*.xml
+
+  test-end-to-end:
+    name: End-to-End Pipeline Test
+    runs-on: ubuntu-latest
+    needs:
+      - test-supabase-integration
+      - test-openai-integration
+      - test-anthropic-integration
+      - test-document-processing
+      - test-privilege-detection
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Run E2E Test Suite
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          npm run test:e2e
+
+      - name: Upload E2E Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-test-results
+          path: test-results/e2e-*.xml
+
+  generate-test-report:
+    name: Generate Test Report
+    runs-on: ubuntu-latest
+    needs:
+      - test-supabase-integration
+      - test-openai-integration
+      - test-anthropic-integration
+      - test-document-processing
+      - test-privilege-detection
+      - test-cost-calculation
+      - test-end-to-end
+    if: always()
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Download All Test Results
+        uses: actions/download-artifact@v4
+        with:
+          path: all-test-results
+
+      - name: Generate Consolidated Report
+        run: |
+          node scripts/generate-test-report.js all-test-results/
+
+      - name: Publish Test Results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: always()
+        with:
+          files: |
+            all-test-results/**/*.xml
+
+      - name: Upload Consolidated Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-report-${{ github.run_id }}
+          path: |
+            test-report.html
+            test-report.json
+
+      - name: Comment Test Results on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const report = JSON.parse(fs.readFileSync('test-report.json', 'utf8'));
+
+            let body = `## 🧪 Integration Test Results\n\n`;
+            body += `**Total Tests:** ${report.total}\n`;
+            body += `**Passed:** ✅ ${report.passed}\n`;
+            body += `**Failed:** ❌ ${report.failed}\n`;
+            body += `**Skipped:** ⏭️ ${report.skipped}\n\n`;
+
+            if (report.failed > 0) {
+              body += `### Failed Tests\n\n`;
+              report.failures.forEach(failure => {
+                body += `- **${failure.test}**\n`;
+                body += `  - ${failure.message}\n\n`;
+              });
+            }
+
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body
+            });

@@ -1,0 +1,79 @@
+# Dependencies
+node_modules/
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Build outputs
+dist/
+build/
+output/
+dashboard/
+*.log
+
+# Vercel
+.vercel
+
+# Processing artifacts
+processed-docs/
+embeddings/
+reports/
+cost-report*.json
+privilege-report*.json
+ingestion-result*.json
+manifest.json
+audit-trail*.json
+
+# Test artifacts
+coverage/
+test-results/
+*.test.js.snap
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Discovery documents (DO NOT COMMIT)
+discovery-docs/**
+case-files/**
+!discovery-docs/.gitkeep
+!case-files/.gitkeep
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Sensitive data
+*.pem
+*.key
+*.p12
+credentials*.json
+secrets*.json
+
+# Compiled output
+*.js.map
+*.d.ts
+
+# Cache
+.cache/
+.parcel-cache/
+.next/

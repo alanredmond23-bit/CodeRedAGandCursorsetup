@@ -1,0 +1,199 @@
+{
+  "mcp_version": "1.0.0",
+  "description": "MCP Configuration for Legal Research and Discovery Integration",
+  "services": {
+    "westlaw": {
+      "enabled": true,
+      "name": "Westlaw Legal Research",
+      "auth_type": "api_key",
+      "base_url": "https://api.westlaw.com/v1",
+      "rate_limits": {
+        "requests_per_minute": 60,
+        "requests_per_day": 5000
+      },
+      "cache_ttl": 86400,
+      "retry_config": {
+        "max_retries": 3,
+        "backoff_multiplier": 2,
+        "max_wait_time": 60
+      },
+      "cost_per_call": 0.10
+    },
+    "lexisnexis": {
+      "enabled": true,
+      "name": "LexisNexis Protégé",
+      "auth_type": "oauth2",
+      "base_url": "https://api.lexisnexis.com/protégé/v1",
+      "auth_url": "https://auth.lexisnexis.com/oauth/v2/token",
+      "rate_limits": {
+        "requests_per_minute": 60,
+        "requests_per_day": 5000
+      },
+      "cache_ttl": 86400,
+      "retry_config": {
+        "max_retries": 3,
+        "backoff_multiplier": 2,
+        "max_wait_time": 60
+      },
+      "cost_per_call": 0.08
+    },
+    "gmail": {
+      "enabled": true,
+      "name": "Gmail Discovery",
+      "auth_type": "oauth2",
+      "scopes": [
+        "https://www.googleapis.com/auth/gmail.readonly",
+        "https://www.googleapis.com/auth/gmail.metadata"
+      ],
+      "rate_limits": {
+        "requests_per_minute": 250,
+        "requests_per_day": 1000000000
+      },
+      "cache_ttl": 3600,
+      "retry_config": {
+        "max_retries": 3,
+        "backoff_multiplier": 2,
+        "max_wait_time": 30
+      },
+      "privilege_detection": {
+        "enabled": true,
+        "confidence_threshold": 0.30,
+        "redact_privileged": true
+      },
+      "cost_per_call": 0.00
+    },
+    "slack": {
+      "enabled": true,
+      "name": "Slack Discovery",
+      "auth_type": "oauth2",
+      "base_url": "https://slack.com/api",
+      "rate_limits": {
+        "tier_1_per_minute": 1,
+        "tier_2_per_minute": 20,
+        "tier_3_per_minute": 50,
+        "tier_4_per_minute": 100
+      },
+      "cache_ttl": 1800,
+      "retry_config": {
+        "max_retries": 3,
+        "backoff_multiplier": 2,
+        "max_wait_time": 60
+      },
+      "privilege_detection": {
+        "enabled": true,
+        "confidence_threshold": 0.30,
+        "redact_privileged": true
+      },
+      "cost_per_call": 0.00
+    },
+    "supabase": {
+      "enabled": true,
+      "name": "Supabase Database",
+      "auth_type": "service_key",
+      "rate_limits": {
+        "requests_per_minute": 1000,
+        "requests_per_day": 100000
+      },
+      "cache_ttl": 300,
+      "retry_config": {
+        "max_retries": 3,
+        "backoff_multiplier": 2,
+        "max_wait_time": 30
+      },
+      "cost_per_call": 0.001
+    },
+    "github": {
+      "enabled": true,
+      "name": "GitHub Version Control",
+      "auth_type": "personal_access_token",
+      "base_url": "https://api.github.com",
+      "rate_limits": {
+        "requests_per_hour": 5000
+      },
+      "cache_ttl": 600,
+      "retry_config": {
+        "max_retries": 3,
+        "backoff_multiplier": 2,
+        "max_wait_time": 300
+      },
+      "cost_per_call": 0.00
+    }
+  },
+  "logging": {
+    "enabled": true,
+    "log_dir": "logs",
+    "log_levels": {
+      "api_calls": "INFO",
+      "auth": "INFO",
+      "errors": "ERROR",
+      "compliance": "INFO"
+    },
+    "rotation": {
+      "max_bytes": 10485760,
+      "backup_count": 10
+    },
+    "compliance_logging": {
+      "enabled": true,
+      "track_privilege_detections": true,
+      "track_discovery_actions": true,
+      "retention_days": 2555
+    }
+  },
+  "caching": {
+    "enabled": true,
+    "cache_dir": "cache",
+    "use_redis": false,
+    "redis_url": "redis://localhost:6379",
+    "default_ttl": 3600,
+    "max_cache_size_mb": 1000
+  },
+  "privilege_detection": {
+    "global_enabled": true,
+    "patterns": [
+      "\\battorney[- ]client\\b",
+      "\\bprivileged\\b.*\\bcommunication\\b",
+      "\\bwork[- ]product\\b",
+      "\\bin confidence\\b",
+      "\\blegal advice\\b",
+      "\\bcounsel\\b",
+      "\\bconfidential\\b.*\\blegal\\b",
+      "\\bprivilege\\b.*\\blog\\b",
+      "\\bdo not produce\\b",
+      "\\battorney eyes only\\b"
+    ],
+    "confidence_weights": {
+      "pattern_match": 0.15,
+      "law_firm_domain": 0.20,
+      "subject_marker": 0.10,
+      "legal_channel": 0.15
+    }
+  },
+  "cost_tracking": {
+    "enabled": true,
+    "track_per_service": true,
+    "track_per_user": true,
+    "daily_budget_usd": 100.00,
+    "alert_threshold": 0.80
+  },
+  "graceful_degradation": {
+    "enabled": true,
+    "fallback_strategies": {
+      "westlaw": {
+        "fallback_to": "lexisnexis",
+        "cache_stale_on_error": true
+      },
+      "lexisnexis": {
+        "fallback_to": "westlaw",
+        "cache_stale_on_error": true
+      },
+      "gmail": {
+        "cache_stale_on_error": true,
+        "partial_results_on_error": true
+      },
+      "slack": {
+        "cache_stale_on_error": true,
+        "partial_results_on_error": true
+      }
+    }
+  }
+}

@@ -1,0 +1,374 @@
+name: Discovery Document Pipeline
+
+on:
+  push:
+    paths:
+      - 'discovery-docs/**'
+      - 'case-files/**'
+  pull_request:
+    paths:
+      - 'discovery-docs/**'
+      - 'case-files/**'
+  workflow_dispatch:
+    inputs:
+      case_number:
+        description: 'Case Number to Process'
+        required: true
+        type: string
+      force_reprocess:
+        description: 'Force reprocess all documents'
+        required: false
+        type: boolean
+        default: false
+
+env:
+  NODE_VERSION: '20.x'
+  MAX_RETRIES: 3
+  COST_ALERT_THRESHOLD: 100 # USD
+
+jobs:
+  validate-documents:
+    name: Validate Discovery Documents
+    runs-on: ubuntu-latest
+    outputs:
+      document_count: ${{ steps.count.outputs.total }}
+      validated: ${{ steps.validate.outputs.success }}
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: |
+          npm ci
+          npm install pdf-parse mammoth tesseract.js
+
+      - name: Count Documents
+        id: count
+        run: |
+          total=$(find discovery-docs -type f \( -name "*.pdf" -o -name "*.docx" -o -name "*.txt" \) | wc -l)
+          echo "total=$total" >> $GITHUB_OUTPUT
+          echo "📄 Found $total documents to process"
+
+      - name: Validate Document Structure
+        id: validate
+        run: |
+          node scripts/validate-documents.js
+          echo "success=true" >> $GITHUB_OUTPUT
+
+      - name: Generate Processing Manifest
+        run: |
+          node scripts/generate-manifest.js > manifest.json
+          cat manifest.json
+
+      - name: Upload Manifest
+        uses: actions/upload-artifact@v4
+        with:
+          name: processing-manifest
+          path: manifest.json
+          retention-days: 30
+
+  privilege-screening:
+    name: Privilege Detection & Screening
+    runs-on: ubuntu-latest
+    needs: validate-documents
+    outputs:
+      privileged_count: ${{ steps.detect.outputs.count }}
+      flagged_docs: ${{ steps.detect.outputs.flagged }}
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Download Manifest
+        uses: actions/download-artifact@v4
+        with:
+          name: processing-manifest
+
+      - name: Run Privilege Detection
+        id: detect
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          node scripts/privilege-detector.js manifest.json
+          count=$(jq '.privileged | length' privilege-report.json)
+          echo "count=$count" >> $GITHUB_OUTPUT
+          echo "🔒 Detected $count potentially privileged documents"
+
+      - name: Generate Privilege Report
+        run: |
+          node scripts/generate-privilege-report.js > privilege-report.html
+
+      - name: Upload Privilege Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: privilege-report
+          path: |
+            privilege-report.json
+            privilege-report.html
+          retention-days: 90 # Legal retention
+
+      - name: Notify Legal Team (If Privileged Found)
+        if: steps.detect.outputs.count > 0
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const count = ${{ steps.detect.outputs.count }};
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `⚠️ Privileged Documents Detected: ${count} documents require review`,
+              body: `## Privilege Alert\n\n${count} documents have been flagged for potential attorney-client privilege.\n\nPlease review the privilege report before proceeding with production.\n\n**Action Required:** Legal review within 24 hours`,
+              labels: ['privilege-review', 'legal-hold', 'urgent']
+            });
+
+  process-documents:
+    name: Process Discovery Documents
+    runs-on: ubuntu-latest
+    needs: [validate-documents, privilege-screening]
+    strategy:
+      matrix:
+        batch: [1, 2, 3, 4] # Process in parallel batches
+      fail-fast: false
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install Processing Dependencies
+        run: |
+          npm ci
+          npm install pdf-parse mammoth tesseract.js openai @anthropic-ai/sdk
+
+      - name: Download Manifest
+        uses: actions/download-artifact@v4
+        with:
+          name: processing-manifest
+
+      - name: Process Document Batch
+        id: process
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          BATCH_NUMBER: ${{ matrix.batch }}
+        run: |
+          node scripts/discovery-processor.js \
+            --batch ${{ matrix.batch }} \
+            --max-retries ${{ env.MAX_RETRIES }}
+
+      - name: Upload Processing Results
+        uses: actions/upload-artifact@v4
+        with:
+          name: processed-batch-${{ matrix.batch }}
+          path: |
+            output/batch-${{ matrix.batch }}/*.json
+            output/batch-${{ matrix.batch }}/metadata.json
+
+      - name: Calculate Batch Costs
+        id: costs
+        run: |
+          cost=$(node scripts/cost-calculator.js output/batch-${{ matrix.batch }})
+          echo "batch_cost=$cost" >> $GITHUB_OUTPUT
+          echo "💰 Batch ${{ matrix.batch }} cost: $$cost"
+
+  calculate-total-costs:
+    name: Calculate Total Processing Costs
+    runs-on: ubuntu-latest
+    needs: process-documents
+    outputs:
+      total_cost: ${{ steps.total.outputs.cost }}
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Download All Batch Results
+        uses: actions/download-artifact@v4
+        with:
+          path: all-batches
+
+      - name: Calculate Total Cost
+        id: total
+        run: |
+          total_cost=$(node scripts/aggregate-costs.js all-batches)
+          echo "cost=$total_cost" >> $GITHUB_OUTPUT
+          echo "💰 Total processing cost: $$total_cost"
+
+      - name: Cost Alert (If Over Threshold)
+        if: steps.total.outputs.cost > env.COST_ALERT_THRESHOLD
+        uses: actions/github-script@v7
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+        with:
+          script: |
+            const cost = ${{ steps.total.outputs.cost }};
+            const threshold = ${{ env.COST_ALERT_THRESHOLD }};
+
+            // Create GitHub issue
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `💰 Cost Alert: Processing exceeded budget threshold`,
+              body: `## Budget Alert\n\nTotal Cost: $${cost}\nThreshold: $${threshold}\nOverage: $${cost - threshold}\n\n**Action Required:** Review processing costs`,
+              labels: ['cost-alert', 'budget']
+            });
+
+      - name: Upload Cost Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: cost-report
+          path: cost-report.json
+          retention-days: 365 # Annual retention
+
+  ingest-to-supabase:
+    name: Ingest to Supabase RAG
+    runs-on: ubuntu-latest
+    needs: [process-documents, privilege-screening]
+    if: needs.privilege-screening.outputs.privileged_count == 0 || github.event.inputs.force_reprocess == 'true'
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Download Processed Documents
+        uses: actions/download-artifact@v4
+        with:
+          path: processed-docs
+
+      - name: Install Supabase CLI
+        run: |
+          npm install -g @supabase/supabase-js
+          npm install @supabase/supabase-js openai
+
+      - name: Ingest Documents
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          node scripts/supabase-ingest.js processed-docs/
+
+      - name: Verify Ingestion
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+        run: |
+          node scripts/verify-ingestion.js
+
+      - name: Generate Ingestion Report
+        run: |
+          node scripts/generate-ingestion-report.js > ingestion-report.json
+
+      - name: Upload Ingestion Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: ingestion-report
+          path: ingestion-report.json
+
+  deploy-dashboard:
+    name: Deploy to Vercel Dashboard
+    runs-on: ubuntu-latest
+    needs: [calculate-total-costs, ingest-to-supabase]
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Download All Reports
+        uses: actions/download-artifact@v4
+        with:
+          path: reports
+
+      - name: Generate Dashboard
+        env:
+          CASE_NUMBER: ${{ github.event.inputs.case_number || 'AUTO' }}
+        run: |
+          node scripts/generate-dashboard.js reports/
+
+      - name: Deploy to Vercel
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          working-directory: ./dashboard
+          vercel-args: '--prod'
+
+      - name: Post Deployment URL
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const url = process.env.VERCEL_URL || 'https://discovery-dashboard.vercel.app';
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: `✅ Discovery Pipeline Complete!\n\n🔗 Dashboard: ${url}\n📊 View processing results and cost breakdown.`
+            });
+
+  audit-trail:
+    name: Generate Audit Trail
+    runs-on: ubuntu-latest
+    needs: [deploy-dashboard]
+    if: always()
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Download All Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: audit-artifacts
+
+      - name: Generate Audit Log
+        run: |
+          node scripts/generate-audit-log.js audit-artifacts/ > audit-trail.json
+
+      - name: Upload Audit Trail
+        uses: actions/upload-artifact@v4
+        with:
+          name: audit-trail-${{ github.run_id }}
+          path: audit-trail.json
+          retention-days: 2555 # 7 years legal retention
+
+      - name: Commit Audit Trail to Repository
+        run: |
+          git config user.name "Discovery Pipeline Bot"
+          git config user.email "discovery-bot@github.com"
+          mkdir -p audit-logs
+          cp audit-trail.json audit-logs/audit-${{ github.run_id }}.json
+          git add audit-logs/
+          git commit -m "chore: add audit trail for run ${{ github.run_id }}" || echo "No changes"
+          git push || echo "Push failed"

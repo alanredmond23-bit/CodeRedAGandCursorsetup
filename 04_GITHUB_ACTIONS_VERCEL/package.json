@@ -1,0 +1,72 @@
+{
+  "name": "discovery-pipeline",
+  "version": "1.0.0",
+  "description": "Legal discovery document processing pipeline with GitHub Actions and Vercel",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest",
+    "test:supabase-connection": "jest tests/supabase-connection.test.js",
+    "test:supabase-crud": "jest tests/supabase-crud.test.js",
+    "test:vector-search": "jest tests/vector-search.test.js",
+    "test:rls-policies": "jest tests/rls-policies.test.js",
+    "test:openai-connection": "jest tests/openai-connection.test.js",
+    "test:openai-embeddings": "jest tests/openai-embeddings.test.js",
+    "test:openai-chat": "jest tests/openai-chat.test.js",
+    "test:openai-tokens": "jest tests/openai-tokens.test.js",
+    "test:anthropic-connection": "jest tests/anthropic-connection.test.js",
+    "test:anthropic-streaming": "jest tests/anthropic-streaming.test.js",
+    "test:anthropic-analysis": "jest tests/anthropic-analysis.test.js",
+    "test:pdf-processing": "jest tests/pdf-processing.test.js",
+    "test:docx-processing": "jest tests/docx-processing.test.js",
+    "test:ocr-processing": "jest tests/ocr-processing.test.js",
+    "test:text-extraction": "jest tests/text-extraction.test.js",
+    "test:privilege-keywords": "jest tests/privilege-keywords.test.js",
+    "test:privilege-ai": "jest tests/privilege-ai.test.js",
+    "test:privilege-confidence": "jest tests/privilege-confidence.test.js",
+    "test:token-counting": "jest tests/token-counting.test.js",
+    "test:cost-calculation": "jest tests/cost-calculation.test.js",
+    "test:budget-tracking": "jest tests/budget-tracking.test.js",
+    "test:e2e": "jest tests/e2e.test.js --runInBand",
+    "generate:dashboard": "node scripts/generate-dashboard.js",
+    "process:documents": "node scripts/discovery-processor.js",
+    "detect:privilege": "node scripts/privilege-detector.js",
+    "calculate:costs": "node scripts/cost-calculator.js",
+    "dev": "vercel dev",
+    "deploy": "vercel --prod"
+  },
+  "keywords": [
+    "legal",
+    "discovery",
+    "document-processing",
+    "ai",
+    "github-actions",
+    "vercel"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.30.0",
+    "@langchain/openai": "^0.3.0",
+    "@supabase/supabase-js": "^2.45.0",
+    "axios": "^1.7.0",
+    "date-fns": "^4.1.0",
+    "dotenv": "^16.4.0",
+    "langchain": "^0.3.0",
+    "mammoth": "^1.8.0",
+    "natural": "^8.0.0",
+    "openai": "^4.67.0",
+    "pdf-parse": "^1.1.1",
+    "tesseract.js": "^5.1.0"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.0",
+    "@types/node": "^20.0.0",
+    "ajv": "^8.17.0",
+    "jest": "^29.7.0",
+    "puppeteer": "^23.0.0",
+    "yaml-validator": "^5.1.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

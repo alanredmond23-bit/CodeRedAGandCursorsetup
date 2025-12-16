@@ -1,0 +1,94 @@
+{
+  "recommendations": [
+    {
+      "id": "cursor.cursor-vscode",
+      "name": "Cursor IDE",
+      "description": "Core Cursor IDE extension",
+      "required": true
+    },
+    {
+      "id": "ms-python.python",
+      "name": "Python",
+      "description": "Python language support for helper scripts",
+      "required": true
+    },
+    {
+      "id": "ms-python.vscode-pylance",
+      "name": "Pylance",
+      "description": "Python IntelliSense and type checking",
+      "required": true
+    },
+    {
+      "id": "supabase.supabase-vscode",
+      "name": "Supabase",
+      "description": "Supabase integration for database operations",
+      "required": true
+    },
+    {
+      "id": "eamodio.gitlens",
+      "name": "GitLens",
+      "description": "Git supercharged - visualize code authorship",
+      "required": false
+    },
+    {
+      "id": "yzhang.markdown-all-in-one",
+      "name": "Markdown All in One",
+      "description": "Markdown support for legal notes and documentation",
+      "required": false
+    },
+    {
+      "id": "bierner.markdown-preview-github-styles",
+      "name": "Markdown Preview GitHub Styling",
+      "description": "Preview markdown with GitHub styling",
+      "required": false
+    },
+    {
+      "id": "streetsidesoftware.code-spell-checker",
+      "name": "Code Spell Checker",
+      "description": "Spell checking for legal documents",
+      "required": false
+    },
+    {
+      "id": "wayou.vscode-todo-highlight",
+      "name": "TODO Highlight",
+      "description": "Highlight TODO, FIXME in legal case notes",
+      "required": false
+    },
+    {
+      "id": "rangav.vscode-thunder-client",
+      "name": "Thunder Client",
+      "description": "Test Supabase API endpoints",
+      "required": false
+    },
+    {
+      "id": "github.copilot",
+      "name": "GitHub Copilot",
+      "description": "AI pair programmer (optional, complementary to Cursor agents)",
+      "required": false
+    },
+    {
+      "id": "github.vscode-pull-request-github",
+      "name": "GitHub Pull Requests",
+      "description": "Manage GitHub PRs from IDE",
+      "required": false
+    },
+    {
+      "id": "esbenp.prettier-vscode",
+      "name": "Prettier",
+      "description": "Code formatter for JSON, YAML, Markdown",
+      "required": false
+    },
+    {
+      "id": "dbaeumer.vscode-eslint",
+      "name": "ESLint",
+      "description": "JavaScript linter (if using JS/TS)",
+      "required": false
+    },
+    {
+      "id": "redhat.vscode-yaml",
+      "name": "YAML",
+      "description": "YAML language support for config files",
+      "required": false
+    }
+  ]
+}

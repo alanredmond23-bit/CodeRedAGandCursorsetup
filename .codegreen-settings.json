@@ -1,0 +1,295 @@
+{
+  "system": "CodeGreen",
+  "description": "Generic Software Development Platform",
+  "version": "1.0",
+  "lastUpdated": "2025-12-16",
+  "environment": "development",
+  
+  "platform": {
+    "name": "CodeGreen Multi-IDE Developer Platform",
+    "purpose": "Unified software development environment across Cursor, Antigravity, Claude Code Terminal",
+    "type": "generic-software-dev"
+  },
+
+  "agents": {
+    "count": 5,
+    "specializations": [
+      "code-analysis",
+      "task-coordinator",
+      "architecture-strategy",
+      "testing-validation",
+      "performance-optimization"
+    ],
+    "primary": {
+      "name": "Coordinator Agent",
+      "role": "Route dev tasks to appropriate specialist agents",
+      "keyboard_shortcut": "Cmd+Shift+C",
+      "ide_assignment": "all"
+    },
+    "specialists": [
+      {
+        "id": 1,
+        "name": "Code Analysis Agent",
+        "focus": "Static analysis, code review, refactoring",
+        "keyboard_shortcut": "Cmd+Shift+A",
+        "tools": ["eslint", "pylint", "sonarqube", "codeql"]
+      },
+      {
+        "id": 2,
+        "name": "Task Management Agent",
+        "focus": "GitHub issues, PRs, project planning",
+        "keyboard_shortcut": "Cmd+Shift+T",
+        "tools": ["github-api", "jira", "linear"]
+      },
+      {
+        "id": 3,
+        "name": "Architecture Agent",
+        "focus": "System design, migration planning",
+        "keyboard_shortcut": "Cmd+Shift+S",
+        "tools": ["claude-vision", "architecture-diagrams"]
+      },
+      {
+        "id": 4,
+        "name": "Test Agent",
+        "focus": "Unit tests, integration tests, coverage",
+        "keyboard_shortcut": "Cmd+Shift+R",
+        "tools": ["pytest", "jest", "mocha", "coverage"]
+      },
+      {
+        "id": 5,
+        "name": "Performance Agent",
+        "focus": "Profiling, optimization, monitoring",
+        "keyboard_shortcut": "Cmd+Shift+P",
+        "tools": ["lighthouse", "pyflame", "v8-profiler"]
+      }
+    ]
+  },
+
+  "mcps": {
+    "count": 6,
+    "servers": [
+      {
+        "name": "GitHub MCP",
+        "purpose": "Repository, PR, issues, actions",
+        "endpoints": ["repos", "pulls", "issues", "workflows"],
+        "authentication": "GITHUB_TOKEN",
+        "rateLimit": "5000/hour"
+      },
+      {
+        "name": "npm/PyPI MCP",
+        "purpose": "Dependency management, package info",
+        "endpoints": ["packages", "versions", "dependencies"],
+        "authentication": "none",
+        "rateLimit": "unlimited"
+      },
+      {
+        "name": "CI/CD MCP",
+        "purpose": "Build status, test results, deployments",
+        "endpoints": ["github-actions", "circle-ci", "jenkins"],
+        "authentication": "CI_TOKEN",
+        "rateLimit": "1000/hour"
+      },
+      {
+        "name": "Monitoring MCP",
+        "purpose": "Performance, errors, logs",
+        "endpoints": ["datadog", "sentry", "newrelic"],
+        "authentication": "MONITORING_API_KEY",
+        "rateLimit": "2000/hour"
+      },
+      {
+        "name": "Documentation MCP",
+        "purpose": "Docs generation, API specs",
+        "endpoints": ["swagger", "openapi", "markdown"],
+        "authentication": "none",
+        "rateLimit": "unlimited"
+      },
+      {
+        "name": "Code Search MCP",
+        "purpose": "Semantic code search, similarity",
+        "endpoints": ["embedding-search", "ast-search"],
+        "authentication": "none",
+        "rateLimit": "unlimited"
+      }
+    ]
+  },
+
+  "database": {
+    "type": "supabase",
+    "tables": 35,
+    "purpose": "Project tracking, code metrics, test results, deployments",
+    "schema": [
+      "organizations",
+      "projects",
+      "repositories",
+      "branches",
+      "commits",
+      "pull_requests",
+      "issues",
+      "code_reviews",
+      "tests",
+      "test_results",
+      "coverage_metrics",
+      "performance_metrics",
+      "deployments",
+      "errors",
+      "logs",
+      "developers",
+      "teams",
+      "permissions"
+    ],
+    "features": {
+      "semanticSearch": "pgvector embeddings for code/docs",
+      "realTimeSync": "All changes sync instantly",
+      "auditTrail": "7-year retention for compliance"
+    }
+  },
+
+  "ides": {
+    "claude_terminal": {
+      "role": "Source of truth",
+      "config_file": "01_CLAUDE_CODE_TERMINAL/settings.json",
+      "features": [
+        "5 agent modes via prompts",
+        "6 MCPs configured",
+        "Real-time cost tracking",
+        "Session checkpointing"
+      ],
+      "setup_time_minutes": 5
+    },
+    "cursor": {
+      "role": "Developer workspace",
+      "config_file": "03_CURSOR_IDE/cursor-settings.json",
+      "features": [
+        "Keyboard shortcuts (6 total)",
+        "Auto-load context from Supabase",
+        "Real-time code metrics",
+        "Inline agent suggestions"
+      ],
+      "setup_time_minutes": 5,
+      "keyboard_shortcuts": {
+        "Cmd+Shift+A": "Code Analysis Agent",
+        "Cmd+Shift+C": "Coordinator Agent",
+        "Cmd+Shift+T": "Task Management Agent",
+        "Cmd+Shift+S": "Architecture Agent",
+        "Cmd+Shift+R": "Test Agent",
+        "Cmd+Shift+P": "Performance Agent"
+      }
+    },
+    "antigravity": {
+      "role": "Cloud orchestration",
+      "config_file": "02_ANTIGRAVITY/antigravity-config.yaml",
+      "features": [
+        "Bidirectional sync (30s cycles)",
+        "3 native cloud agents",
+        "Conflict resolution",
+        "<2s latency"
+      ],
+      "setup_time_minutes": 10,
+      "sync_interval_seconds": 30,
+      "sync_latency_target_ms": 2000
+    }
+  },
+
+  "deployment": {
+    "ci_cd": {
+      "platform": "GitHub Actions",
+      "workflows": [
+        "build.yml",
+        "test.yml",
+        "lint.yml",
+        "coverage.yml",
+        "performance.yml",
+        "security.yml",
+        "deploy.yml"
+      ],
+      "capacity": "1000+ builds/day",
+      "artifact_retention_days": 30
+    },
+    "hosting": {
+      "platform": "Vercel",
+      "config_file": "04_GITHUB_ACTIONS_VERCEL/vercel.json",
+      "auto_deploy": true,
+      "preview_deploys": true
+    }
+  },
+
+  "security": {
+    "zoneControl": {
+      "RED": "High-risk (delete, force push, production deploy)",
+      "YELLOW": "Moderate (code merge, dependency update)",
+      "GREEN": "Safe (code review, read operations)"
+    },
+    "secrets": {
+      "location": "/Users/alanredmond/Desktop/SECRETS",
+      "environment_variables": [
+        "GITHUB_TOKEN",
+        "NPM_TOKEN",
+        "SUPABASE_URL",
+        "SUPABASE_SERVICE_KEY",
+        "MONITORING_API_KEY"
+      ],
+      "git_protection": "Stored locally, NOT in repo"
+    }
+  },
+
+  "metrics": {
+    "tracking": [
+      "commits_per_day",
+      "test_coverage_percent",
+      "build_success_rate",
+      "deployment_frequency",
+      "mean_time_to_recovery",
+      "code_quality_score",
+      "performance_score"
+    ],
+    "real_time_display": true,
+    "alerts": {
+      "test_coverage_below": 80,
+      "build_failure_rate_above": 10,
+      "performance_degradation_percent": 15
+    }
+  },
+
+  "quick_start": {
+    "total_setup_time_minutes": 30,
+    "steps": [
+      {
+        "step": 1,
+        "name": "Setup Secrets",
+        "time_minutes": 5,
+        "action": "Create ~/.codegreen-secrets.env with API tokens"
+      },
+      {
+        "step": 2,
+        "name": "Deploy Database",
+        "time_minutes": 10,
+        "action": "Run Supabase schema migration"
+      },
+      {
+        "step": 3,
+        "name": "Configure Claude Terminal",
+        "time_minutes": 5,
+        "action": "Load settings and test 5 agents"
+      },
+      {
+        "step": 4,
+        "name": "Configure Cursor",
+        "time_minutes": 5,
+        "action": "Load IDE shortcuts and test"
+      },
+      {
+        "step": 5,
+        "name": "Start Antigravity",
+        "time_minutes": 5,
+        "action": "Enable sync engine"
+      }
+    ]
+  },
+
+  "compliance": {
+    "audit_logging": true,
+    "retention_years": 7,
+    "cost_tracking": true,
+    "cost_tracking_granularity": "per-task"
+  }
+}

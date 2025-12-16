@@ -1,0 +1,351 @@
+{
+  "mcpServers": {
+    "westlaw": {
+      "description": "Westlaw legal research database MCP",
+      "command": "python",
+      "args": ["-m", "westlaw_mcp"],
+      "env": {
+        "WESTLAW_API_KEY": "${WESTLAW_API_KEY}",
+        "WESTLAW_API_SECRET": "${WESTLAW_API_SECRET}",
+        "WESTLAW_ENDPOINT": "https://api.westlaw.com/v1"
+      },
+      "capabilities": {
+        "case_law_search": true,
+        "keycite": true,
+        "headnotes": true,
+        "citing_references": true,
+        "statute_search": false
+      },
+      "rate_limits": {
+        "queries_per_hour": 100,
+        "concurrent_requests": 5
+      },
+      "timeout_ms": 30000,
+      "retry_policy": {
+        "max_retries": 3,
+        "backoff": "exponential",
+        "initial_delay_ms": 1000
+      }
+    },
+
+    "lexisnexis": {
+      "description": "LexisNexis legal research database MCP",
+      "command": "python",
+      "args": ["-m", "lexisnexis_mcp"],
+      "env": {
+        "LEXIS_CLIENT_ID": "${LEXIS_CLIENT_ID}",
+        "LEXIS_CLIENT_SECRET": "${LEXIS_CLIENT_SECRET}",
+        "LEXIS_ENDPOINT": "https://api.lexisnexis.com/v2",
+        "LEXIS_AUTH_URL": "https://auth.lexisnexis.com/oauth2/token"
+      },
+      "capabilities": {
+        "case_law_search": true,
+        "statute_search": true,
+        "regulation_search": true,
+        "shepardize": true,
+        "annotations": true
+      },
+      "rate_limits": {
+        "queries_per_hour": 50,
+        "concurrent_requests": 3
+      },
+      "timeout_ms": 45000,
+      "retry_policy": {
+        "max_retries": 3,
+        "backoff": "exponential",
+        "initial_delay_ms": 2000
+      }
+    },
+
+    "gmail": {
+      "description": "Gmail email discovery and communication access MCP",
+      "command": "python",
+      "args": ["-m", "gmail_mcp"],
+      "env": {
+        "GMAIL_CREDENTIALS_JSON": "${GMAIL_CREDENTIALS_JSON}",
+        "GMAIL_TOKEN_JSON": "${GMAIL_TOKEN_JSON}",
+        "GMAIL_SCOPES": "https://www.googleapis.com/auth/gmail.readonly,https://www.googleapis.com/auth/gmail.modify"
+      },
+      "capabilities": {
+        "email_search": true,
+        "message_retrieval": true,
+        "attachment_access": true,
+        "thread_reconstruction": true,
+        "label_management": true
+      },
+      "rate_limits": {
+        "queries_per_second": 250,
+        "quota_per_day": 1000000
+      },
+      "timeout_ms": 15000,
+      "retry_policy": {
+        "max_retries": 5,
+        "backoff": "exponential",
+        "initial_delay_ms": 500
+      },
+      "privilege_detection": {
+        "enabled": true,
+        "auto_flag": true,
+        "patterns": [
+          "attorney-client",
+          "privileged",
+          "confidential legal",
+          "work product"
+        ]
+      }
+    },
+
+    "slack": {
+      "description": "Slack workspace communication access MCP",
+      "command": "python",
+      "args": ["-m", "slack_mcp"],
+      "env": {
+        "SLACK_BOT_TOKEN": "${SLACK_BOT_TOKEN}",
+        "SLACK_APP_TOKEN": "${SLACK_APP_TOKEN}",
+        "SLACK_WORKSPACE_ID": "${SLACK_WORKSPACE_ID}"
+      },
+      "capabilities": {
+        "message_search": true,
+        "channel_history": true,
+        "thread_retrieval": true,
+        "file_access": true,
+        "user_lookup": true
+      },
+      "rate_limits": {
+        "tier": 2,
+        "requests_per_minute": 20
+      },
+      "timeout_ms": 10000,
+      "retry_policy": {
+        "max_retries": 3,
+        "backoff": "linear",
+        "initial_delay_ms": 1000
+      },
+      "privilege_detection": {
+        "enabled": true,
+        "auto_flag": true,
+        "internal_channels_privileged": true,
+        "channels_whitelist": ["#legal-team", "#case-", "#strategy-"]
+      }
+    },
+
+    "supabase": {
+      "description": "Supabase PostgreSQL database for case management and RAG",
+      "command": "python",
+      "args": ["-m", "supabase_mcp"],
+      "env": {
+        "SUPABASE_URL": "${SUPABASE_URL}",
+        "SUPABASE_KEY": "${SUPABASE_KEY}",
+        "SUPABASE_SERVICE_ROLE_KEY": "${SUPABASE_SERVICE_ROLE_KEY}"
+      },
+      "capabilities": {
+        "case_management": true,
+        "document_storage": true,
+        "full_text_search": true,
+        "vector_search": true,
+        "session_management": true,
+        "audit_trail": true
+      },
+      "rate_limits": {
+        "concurrent_connections": 10,
+        "queries_per_second": 100
+      },
+      "timeout_ms": 5000,
+      "retry_policy": {
+        "max_retries": 3,
+        "backoff": "exponential",
+        "initial_delay_ms": 500
+      },
+      "database_config": {
+        "pool_size": 10,
+        "max_overflow": 20,
+        "pool_timeout": 30,
+        "pool_recycle": 3600
+      }
+    },
+
+    "openai": {
+      "description": "OpenAI API for embeddings and NLP tasks",
+      "command": "python",
+      "args": ["-m", "openai_mcp"],
+      "env": {
+        "OPENAI_API_KEY": "${OPENAI_API_KEY}",
+        "OPENAI_ORG_ID": "${OPENAI_ORG_ID}"
+      },
+      "capabilities": {
+        "embeddings": true,
+        "text_completion": false,
+        "chat_completion": false,
+        "models": ["text-embedding-ada-002"]
+      },
+      "rate_limits": {
+        "requests_per_minute": 3000,
+        "tokens_per_minute": 1000000
+      },
+      "timeout_ms": 30000,
+      "retry_policy": {
+        "max_retries": 5,
+        "backoff": "exponential",
+        "initial_delay_ms": 1000
+      }
+    },
+
+    "google-drive": {
+      "description": "Google Drive document storage and retrieval (optional)",
+      "command": "python",
+      "args": ["-m", "gdrive_mcp"],
+      "env": {
+        "GDRIVE_CREDENTIALS_JSON": "${GDRIVE_CREDENTIALS_JSON}",
+        "GDRIVE_TOKEN_JSON": "${GDRIVE_TOKEN_JSON}",
+        "GDRIVE_SCOPES": "https://www.googleapis.com/auth/drive.readonly"
+      },
+      "capabilities": {
+        "file_search": true,
+        "file_download": true,
+        "metadata_access": true,
+        "folder_listing": true
+      },
+      "rate_limits": {
+        "queries_per_second": 10,
+        "quota_per_day": 1000000000
+      },
+      "timeout_ms": 20000,
+      "enabled": false
+    }
+  },
+
+  "mcp_connection_priority": [
+    "supabase",
+    "westlaw",
+    "lexisnexis",
+    "gmail",
+    "slack",
+    "openai",
+    "google-drive"
+  ],
+
+  "connection_settings": {
+    "auto_reconnect": true,
+    "health_check_interval_ms": 60000,
+    "connection_timeout_ms": 10000,
+    "keep_alive": true
+  },
+
+  "privilege_detection": {
+    "global_enabled": true,
+    "auto_quarantine": true,
+    "require_attorney_review": true,
+    "patterns": {
+      "attorney_client": [
+        "attorney-client",
+        "legal advice",
+        "privileged communication",
+        "confidential legal",
+        "in confidence",
+        "for legal purposes"
+      ],
+      "work_product": [
+        "work product",
+        "mental impressions",
+        "legal strategy",
+        "prepared in anticipation of litigation",
+        "internal analysis"
+      ],
+      "settlement": [
+        "without prejudice",
+        "settlement discussion",
+        "settlement negotiation",
+        "for settlement purposes only",
+        "FRE 408",
+        "Rule 408"
+      ]
+    },
+    "email_domain_rules": {
+      "attorney_domains": ["law.com", "legalfirm.com", "attorney.com"],
+      "client_domains": ["techcorp.com", "startupco.com"],
+      "auto_flag_attorney_to_client": true
+    }
+  },
+
+  "audit_trail": {
+    "enabled": true,
+    "log_level": "COMPREHENSIVE",
+    "storage": "supabase",
+    "retention_days": 2555,
+    "immutable": true,
+    "logged_events": [
+      "mcp_connection",
+      "mcp_query",
+      "privilege_flag",
+      "document_access",
+      "mode_invocation",
+      "session_checkpoint"
+    ]
+  },
+
+  "session_management": {
+    "auto_checkpoint": true,
+    "checkpoint_interval_minutes": 15,
+    "max_session_age_hours": 24,
+    "preserve_conversation_history": true,
+    "max_history_items": 100
+  },
+
+  "mode_mcp_requirements": {
+    "discovery": {
+      "required": ["westlaw", "lexisnexis", "gmail", "supabase"],
+      "optional": ["slack", "google-drive"]
+    },
+    "coordinator": {
+      "required": ["supabase"],
+      "optional": ["westlaw", "lexisnexis", "gmail", "slack"]
+    },
+    "strategy": {
+      "required": ["westlaw", "lexisnexis", "supabase"],
+      "optional": ["gmail"]
+    },
+    "evidence": {
+      "required": ["supabase", "gmail"],
+      "optional": ["slack", "google-drive"]
+    },
+    "analysis": {
+      "required": ["supabase"],
+      "optional": ["openai"]
+    }
+  },
+
+  "error_handling": {
+    "mcp_failure_mode": "DEGRADED",
+    "required_mcp_failure": "ABORT",
+    "optional_mcp_failure": "CONTINUE",
+    "notify_on_failure": true,
+    "log_all_errors": true
+  },
+
+  "security": {
+    "encrypt_at_rest": true,
+    "encrypt_in_transit": true,
+    "credential_storage": "env_variables",
+    "rotate_credentials_days": 90,
+    "require_2fa": false,
+    "ip_whitelist_enabled": false
+  },
+
+  "performance": {
+    "cache_enabled": true,
+    "cache_ttl_seconds": 3600,
+    "parallel_mcp_calls": true,
+    "max_parallel_calls": 5,
+    "request_batching": true,
+    "batch_size": 10
+  },
+
+  "legal_compliance": {
+    "jurisdiction": "California",
+    "ethical_rules": ["ABA Model Rules", "California Rules of Professional Conduct"],
+    "data_retention_years": 7,
+    "privilege_protection": "STRICT",
+    "audit_trail_required": true,
+    "attorney_supervision_required": true
+  }
+}

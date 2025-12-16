@@ -1,0 +1,294 @@
+{
+  "timestamp": "2025-12-16T11:45:49.447750",
+  "summary": {
+    "total_tests": 40,
+    "passed": 40,
+    "failed": 0,
+    "warnings": 0,
+    "success_rate": "100.0%"
+  },
+  "status": "GREEN",
+  "readiness": "System is ready for deployment",
+  "results": [
+    {
+      "name": "1.1 MCP Config Exists",
+      "status": "PASS",
+      "message": "/Users/alanredmond/Desktop/CodeGreen/01_CLAUDE_CODE_TERMINAL/mcp-config.json",
+      "details": "",
+      "timestamp": "2025-12-16T11:45:49.446921"
+    },
+    {
+      "name": "1.2 Valid JSON Syntax",
+      "status": "PASS",
+      "message": "MCP config is valid JSON",
+      "details": "",
+      "timestamp": "2025-12-16T11:45:49.447034"
+    },
+    {
+      "name": "1.3 Required MCP Servers",
+      "status": "PASS",
+      "message": "All 5 required servers configured",
+      "details": "",
+      "timestamp": "2025-12-16T11:45:49.447040"
+    },
+    {
+      "name": "1.4 Agents Directory",
+      "status": "PASS",
+      "message": "/Users/alanredmond/Desktop/CodeGreen/01_CLAUDE_CODE_TERMINAL/agents",
+      "details": "",
+      "timestamp": "2025-12-16T11:45:49.447063"
+    },
+    {
+      "name": "1.5 Agent Directories",
+      "status": "PASS",
+      "message": "Found 2 agent directories",
+      "details": "",
+      "timestamp": "2025-12-16T11:45:49.447088"
+    },
+    {
+      "name": "1.6 Agent Invocability",
+      "status": "PASS",
+      "message": "All 5 agents can be invoked (mock test)",
+      "details": "",
+      "timestamp": "2025-12-16T11:45:49.447094"
+    },
+    {
+      "name": "2.1 Cursor Config Exists",
+      "status": "PASS",
+      "message": "/Users/alanredmond/Desktop/CodeGreen/03_CURSOR_IDE/cursor-settings.json",
+      "details": "",
+      "timestamp": "2025-12-16T11:45:49.447108"
+    },
+    {
+      "name": "2.2 Valid JSON Syntax",
+      "status": "PASS",
+      "message": "Cursor config is valid JSON",
+      "details": "",
+      "timestamp": "2025-12-16T11:45:49.447179"
+    },
+    {
+      "name": "2.3 Shortcut Cmd+Shift+A",
+      "status": "PASS",
+      "message": "Mapped to Code Analysis Agent",
+      "details": "",
+      "timestamp": "2025-12-16T11:45:49.447183"
+    },
+    {
+      "name": "2.4 Shortcut Cmd+Shift+C",
+      "status": "PASS",
+      "message": "Mapped to Coordinator Agent",
+      "details": "",
+      "timestamp": "2025-12-16T11:45:49.447186"
+    },
+    {
+      "name": "2.5 Shortcut Cmd+Shift+S",
+      "status": "PASS",
+      "message": "Mapped to Architecture Agent",
+      "details": "",
+      "timestamp": "2025-12-16T11:45:49.447188"
+    },
+    {
+      "name": "2.6 Shortcut Cmd+Shift+R",
+      "status": "PASS",
+      "message": "Mapped to Test Agent",
+      "details": "",
+      "timestamp": "2025-12-16T11:45:49.447191"
+    },
+    {
+      "name": "2.7 Shortcut Cmd+Shift+P",
+      "status": "PASS",
+      "message": "Mapped to Performance Agent",
+      "details": "",
+      "timestamp": "2025-12-16T11:45:49.447193"
+    },
+    {
+      "name": "3.1 Antigravity Config Exists",
+      "status": "PASS",
+      "message": "/Users/alanredmond/Desktop/CodeGreen/02_ANTIGRAVITY/antigravity-config.yaml",
+      "details": "",
+      "timestamp": "2025-12-16T11:45:49.447211"
+    },
+    {
+      "name": "3.2 Valid YAML Syntax",
+      "status": "PASS",
+      "message": "Antigravity config is valid YAML",
+      "details": "",
+      "timestamp": "2025-12-16T11:45:49.447430"
+    },
+    {
+      "name": "3.3 Sync Interval",
+      "status": "PASS",
+      "message": "Interval is 30 seconds",
+      "details": "",
+      "timestamp": "2025-12-16T11:45:49.447433"
+    },
+    {
+      "name": "3.4 Conflict Resolver",
+      "status": "PASS",
+      "message": "Strategy: source_wins",
+      "details": "",
+      "timestamp": "2025-12-16T11:45:49.447435"
+    },
+    {
+      "name": "3.5 Database Sync Target",
+      "status": "PASS",
+      "message": "Provider: supabase",
+      "details": "",
+      "timestamp": "2025-12-16T11:45:49.447437"
+    },
+    {
+      "name": "4.1 Schema File Exists",
+      "status": "PASS",
+      "message": "/Users/alanredmond/Desktop/CodeGreen/supabase/migrations/20251216_001_create_codegreen_schema.sql",
+      "details": "",
+      "timestamp": "2025-12-16T11:45:49.447456"
+    },
+    {
+      "name": "4.2 Schema File Readable",
+      "status": "PASS",
+      "message": "File size: 15148 bytes",
+      "details": "",
+      "timestamp": "2025-12-16T11:45:49.447496"
+    },
+    {
+      "name": "4.3 Organizations Tables",
+      "status": "PASS",
+      "message": "All 4 tables found: organizations, teams, developers, team_members",
+      "details": "",
+      "timestamp": "2025-12-16T11:45:49.447503"
+    },
+    {
+      "name": "4.4 Projects Tables",
+      "status": "PASS",
+      "message": "All 4 tables found: projects, repositories, branches, commits",
+      "details": "",
+      "timestamp": "2025-12-16T11:45:49.447509"
+    },
+    {
+      "name": "4.5 Code Management Tables",
+      "status": "PASS",
+      "message": "All 4 tables found: pull_requests, code_reviews, issues, code_analysis",
+      "details": "",
+      "timestamp": "2025-12-16T11:45:49.447517"
+    },
+    {
+      "name": "4.6 Testing Tables",
+      "status": "PASS",
+      "message": "All 3 tables found: tests, test_results, coverage_metrics",
+      "details": "",
+      "timestamp": "2025-12-16T11:45:49.447525"
+    },
+    {
+      "name": "4.7 Performance Tables",
+      "status": "PASS",
+      "message": "All 3 tables found: performance_metrics, errors, logs",
+      "details": "",
+      "timestamp": "2025-12-16T11:45:49.447535"
+    },
+    {
+      "name": "4.8 Deployments Tables",
+      "status": "PASS",
+      "message": "All 2 tables found: deployments, build_results",
+      "details": "",
+      "timestamp": "2025-12-16T11:45:49.447543"
+    },
+    {
+      "name": "4.9 Utilities Tables",
+      "status": "PASS",
+      "message": "All 2 tables found: permissions, cost_tracking",
+      "details": "",
+      "timestamp": "2025-12-16T11:45:49.447552"
+    },
+    {
+      "name": "4.10 Total Tables",
+      "status": "PASS",
+      "message": "Found 22 tables (expected ~22)",
+      "details": "",
+      "timestamp": "2025-12-16T11:45:49.447557"
+    },
+    {
+      "name": "File: Claude MCP Config",
+      "status": "PASS",
+      "message": "Exists and readable: 01_CLAUDE_CODE_TERMINAL/mcp-config.json",
+      "details": "",
+      "timestamp": "2025-12-16T11:45:49.447579"
+    },
+    {
+      "name": "File: Antigravity Config",
+      "status": "PASS",
+      "message": "Exists and readable: 02_ANTIGRAVITY/antigravity-config.yaml",
+      "details": "",
+      "timestamp": "2025-12-16T11:45:49.447596"
+    },
+    {
+      "name": "File: Cursor Settings",
+      "status": "PASS",
+      "message": "Exists and readable: 03_CURSOR_IDE/cursor-settings.json",
+      "details": "",
+      "timestamp": "2025-12-16T11:45:49.447612"
+    },
+    {
+      "name": "File: Database Schema",
+      "status": "PASS",
+      "message": "Exists and readable: supabase/migrations/20251216_001_create_codegreen_schema.sql",
+      "details": "",
+      "timestamp": "2025-12-16T11:45:49.447629"
+    },
+    {
+      "name": "File: CodeGreen Settings",
+      "status": "PASS",
+      "message": "Exists and readable: .codegreen-settings.json",
+      "details": "",
+      "timestamp": "2025-12-16T11:45:49.447657"
+    },
+    {
+      "name": "MCP Server: westlaw",
+      "status": "PASS",
+      "message": "Configuration is complete",
+      "details": "",
+      "timestamp": "2025-12-16T11:45:49.447731"
+    },
+    {
+      "name": "MCP Server: lexisnexis",
+      "status": "PASS",
+      "message": "Configuration is complete",
+      "details": "",
+      "timestamp": "2025-12-16T11:45:49.447733"
+    },
+    {
+      "name": "MCP Server: gmail",
+      "status": "PASS",
+      "message": "Configuration is complete",
+      "details": "",
+      "timestamp": "2025-12-16T11:45:49.447735"
+    },
+    {
+      "name": "MCP Server: slack",
+      "status": "PASS",
+      "message": "Configuration is complete",
+      "details": "",
+      "timestamp": "2025-12-16T11:45:49.447736"
+    },
+    {
+      "name": "MCP Server: supabase",
+      "status": "PASS",
+      "message": "Configuration is complete",
+      "details": "",
+      "timestamp": "2025-12-16T11:45:49.447739"
+    },
+    {
+      "name": "MCP Server: openai",
+      "status": "PASS",
+      "message": "Configuration is complete",
+      "details": "",
+      "timestamp": "2025-12-16T11:45:49.447741"
+    },
+    {
+      "name": "MCP Server: google-drive",
+      "status": "PASS",
+      "message": "Configuration is complete",
+      "details": "",
+      "timestamp": "2025-12-16T11:45:49.447742"
+    }
+  ]
+}

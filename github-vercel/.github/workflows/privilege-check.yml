@@ -1,0 +1,298 @@
+name: Privilege Detection & Review
+
+on:
+  push:
+    paths:
+      - 'discovery-docs/**'
+  workflow_dispatch:
+    inputs:
+      document_path:
+        description: 'Specific document to check'
+        required: false
+        type: string
+      sensitivity_level:
+        description: 'Detection sensitivity (low|medium|high)'
+        required: false
+        type: choice
+        options:
+          - low
+          - medium
+          - high
+        default: 'medium'
+
+env:
+  PRIVILEGE_KEYWORDS: 'attorney,counsel,privileged,confidential,work product,legal advice'
+  MIN_CONFIDENCE_SCORE: 0.75
+
+jobs:
+  extract-documents:
+    name: Extract & Prepare Documents
+    runs-on: ubuntu-latest
+    outputs:
+      document_count: ${{ steps.count.outputs.total }}
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2 # Get previous commit for diff
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+
+      - name: Identify Changed Documents
+        id: changed
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ github.event.inputs.document_path }}" ]; then
+            echo "${{ github.event.inputs.document_path }}" > changed-files.txt
+          else
+            git diff --name-only HEAD^ HEAD | grep -E '\.(pdf|docx|txt|doc)$' > changed-files.txt || echo "No documents changed"
+          fi
+
+          cat changed-files.txt
+
+      - name: Count Documents
+        id: count
+        run: |
+          total=$(cat changed-files.txt | wc -l)
+          echo "total=$total" >> $GITHUB_OUTPUT
+          echo "📄 Documents to check: $total"
+
+      - name: Upload Document List
+        uses: actions/upload-artifact@v4
+        with:
+          name: document-list
+          path: changed-files.txt
+
+  privilege-detection:
+    name: AI-Powered Privilege Detection
+    runs-on: ubuntu-latest
+    needs: extract-documents
+    if: needs.extract-documents.outputs.document_count > 0
+    strategy:
+      matrix:
+        ai_provider: [openai, anthropic]
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+
+      - name: Install Dependencies
+        run: |
+          npm ci
+          npm install pdf-parse mammoth openai @anthropic-ai/sdk natural
+
+      - name: Download Document List
+        uses: actions/download-artifact@v4
+        with:
+          name: document-list
+
+      - name: Run Privilege Detection (${{ matrix.ai_provider }})
+        id: detect
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          AI_PROVIDER: ${{ matrix.ai_provider }}
+          SENSITIVITY: ${{ github.event.inputs.sensitivity_level || 'medium' }}
+        run: |
+          node scripts/privilege-detector.js \
+            --provider ${{ matrix.ai_provider }} \
+            --files changed-files.txt \
+            --sensitivity ${{ github.event.inputs.sensitivity_level || 'medium' }} \
+            --output privilege-results-${{ matrix.ai_provider }}.json
+
+      - name: Upload Detection Results
+        uses: actions/upload-artifact@v4
+        with:
+          name: privilege-results-${{ matrix.ai_provider }}
+          path: privilege-results-${{ matrix.ai_provider }}.json
+
+  aggregate-results:
+    name: Aggregate & Validate Results
+    runs-on: ubuntu-latest
+    needs: privilege-detection
+    outputs:
+      privileged_count: ${{ steps.aggregate.outputs.count }}
+      high_risk_count: ${{ steps.aggregate.outputs.high_risk }}
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+
+      - name: Download All Results
+        uses: actions/download-artifact@v4
+        with:
+          path: privilege-results
+
+      - name: Aggregate Results
+        id: aggregate
+        run: |
+          node scripts/aggregate-privilege-results.js privilege-results/
+
+          count=$(jq '.privileged_documents | length' aggregated-results.json)
+          high_risk=$(jq '.high_risk_documents | length' aggregated-results.json)
+
+          echo "count=$count" >> $GITHUB_OUTPUT
+          echo "high_risk=$high_risk" >> $GITHUB_OUTPUT
+
+          echo "🔒 Privileged documents: $count"
+          echo "🚨 High risk documents: $high_risk"
+
+      - name: Generate Confidence Matrix
+        run: |
+          node scripts/generate-confidence-matrix.js aggregated-results.json
+
+      - name: Upload Aggregated Results
+        uses: actions/upload-artifact@v4
+        with:
+          name: privilege-final-results
+          path: |
+            aggregated-results.json
+            confidence-matrix.json
+
+  legal-review-workflow:
+    name: Trigger Legal Review
+    runs-on: ubuntu-latest
+    needs: aggregate-results
+    if: needs.aggregate-results.outputs.privileged_count > 0
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Download Final Results
+        uses: actions/download-artifact@v4
+        with:
+          name: privilege-final-results
+
+      - name: Generate Review Report
+        run: |
+          node scripts/generate-privilege-review-report.js
+
+      - name: Create Legal Review Issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const results = JSON.parse(fs.readFileSync('aggregated-results.json', 'utf8'));
+
+            const privilegedDocs = results.privileged_documents || [];
+            const highRiskDocs = results.high_risk_documents || [];
+
+            let body = `## Privilege Review Required\n\n`;
+            body += `**Total Privileged Documents:** ${privilegedDocs.length}\n`;
+            body += `**High Risk Documents:** ${highRiskDocs.length}\n\n`;
+
+            body += `### High Risk Documents\n\n`;
+            highRiskDocs.forEach(doc => {
+              body += `- **${doc.filename}**\n`;
+              body += `  - Confidence: ${(doc.confidence * 100).toFixed(1)}%\n`;
+              body += `  - Reason: ${doc.reason}\n`;
+              body += `  - Detected Keywords: ${doc.keywords.join(', ')}\n\n`;
+            });
+
+            body += `### Review Checklist\n\n`;
+            body += `- [ ] Review all flagged documents\n`;
+            body += `- [ ] Determine privilege status\n`;
+            body += `- [ ] Create privilege log\n`;
+            body += `- [ ] Mark documents for withholding or production\n`;
+            body += `- [ ] Update case management system\n\n`;
+            body += `**Review Deadline:** ${new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()}\n`;
+
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `🔒 Privilege Review Required: ${privilegedDocs.length} documents`,
+              body: body,
+              labels: ['privilege-review', 'legal-hold', 'urgent'],
+              assignees: process.env.LEGAL_TEAM_ASSIGNEES?.split(',') || []
+            });
+
+      - name: Send Email Alert to Legal Team
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: ${{ secrets.SMTP_SERVER }}
+          server_port: ${{ secrets.SMTP_PORT }}
+          username: ${{ secrets.SMTP_USERNAME }}
+          password: ${{ secrets.SMTP_PASSWORD }}
+          subject: 'URGENT: Privileged Documents Detected - Review Required'
+          to: ${{ secrets.LEGAL_TEAM_EMAIL }}
+          from: 'Discovery Pipeline <noreply@discovery.legal>'
+          body: |
+            Privileged documents have been detected in the discovery pipeline.
+
+            Count: ${{ needs.aggregate-results.outputs.privileged_count }}
+            High Risk: ${{ needs.aggregate-results.outputs.high_risk_count }}
+
+            Please review immediately: https://github.com/${{ github.repository }}/issues
+          attachments: |
+            privilege-review-report.pdf
+
+      - name: Block Pipeline (If High Risk)
+        if: needs.aggregate-results.outputs.high_risk_count > 0
+        run: |
+          echo "🚨 High risk privileged documents detected. Pipeline blocked."
+          echo "Legal review required before proceeding."
+          exit 1
+
+  privilege-log:
+    name: Generate Privilege Log
+    runs-on: ubuntu-latest
+    needs: aggregate-results
+    if: needs.aggregate-results.outputs.privileged_count > 0
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+
+      - name: Download Final Results
+        uses: actions/download-artifact@v4
+        with:
+          name: privilege-final-results
+
+      - name: Generate Privilege Log (Fed. R. Civ. P. 26(b)(5))
+        run: |
+          node scripts/generate-privilege-log.js \
+            --format legal \
+            --output privilege-log.xlsx
+
+      - name: Generate PDF Report
+        run: |
+          node scripts/generate-privilege-pdf.js
+
+      - name: Upload Privilege Log
+        uses: actions/upload-artifact@v4
+        with:
+          name: privilege-log-${{ github.run_id }}
+          path: |
+            privilege-log.xlsx
+            privilege-log.pdf
+          retention-days: 2555 # 7 years
+
+      - name: Commit Privilege Log to Repository
+        run: |
+          git config user.name "Privilege Detection Bot"
+          git config user.email "privilege-bot@github.com"
+          mkdir -p privilege-logs
+          cp privilege-log.xlsx privilege-logs/privilege-log-${{ github.run_id }}.xlsx
+          cp privilege-log.pdf privilege-logs/privilege-log-${{ github.run_id }}.pdf
+          git add privilege-logs/
+          git commit -m "docs: add privilege log for run ${{ github.run_id }}" || echo "No changes"
+          git push || echo "Push failed"

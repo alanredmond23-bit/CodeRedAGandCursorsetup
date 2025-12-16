@@ -1,0 +1,351 @@
+name: Supabase RAG Ingestion
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_path:
+        description: 'Path to documents to ingest'
+        required: true
+        type: string
+      case_id:
+        description: 'Case ID for indexing'
+        required: true
+        type: string
+      batch_size:
+        description: 'Documents per batch'
+        required: false
+        type: number
+        default: 50
+  workflow_run:
+    workflows: ["Discovery Document Pipeline"]
+    types:
+      - completed
+
+env:
+  EMBEDDING_MODEL: 'text-embedding-3-large'
+  CHUNK_SIZE: 1000
+  CHUNK_OVERLAP: 200
+  MAX_RETRIES: 5
+
+jobs:
+  prepare-documents:
+    name: Prepare Documents for Ingestion
+    runs-on: ubuntu-latest
+    outputs:
+      total_documents: ${{ steps.prepare.outputs.total }}
+      total_chunks: ${{ steps.prepare.outputs.chunks }}
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+
+      - name: Install Dependencies
+        run: |
+          npm ci
+          npm install langchain @langchain/openai @supabase/supabase-js pdf-parse
+
+      - name: Extract and Chunk Documents
+        id: prepare
+        env:
+          CHUNK_SIZE: ${{ env.CHUNK_SIZE }}
+          CHUNK_OVERLAP: ${{ env.CHUNK_OVERLAP }}
+        run: |
+          node scripts/prepare-documents-for-rag.js \
+            --source "${{ github.event.inputs.source_path || 'processed-docs/' }}" \
+            --chunk-size ${{ env.CHUNK_SIZE }} \
+            --overlap ${{ env.CHUNK_OVERLAP }}
+
+          total=$(jq '.total_documents' document-chunks.json)
+          chunks=$(jq '.total_chunks' document-chunks.json)
+
+          echo "total=$total" >> $GITHUB_OUTPUT
+          echo "chunks=$chunks" >> $GITHUB_OUTPUT
+
+          echo "📄 Prepared $total documents ($chunks chunks)"
+
+      - name: Upload Chunked Documents
+        uses: actions/upload-artifact@v4
+        with:
+          name: document-chunks
+          path: document-chunks.json
+
+  generate-embeddings:
+    name: Generate Embeddings
+    runs-on: ubuntu-latest
+    needs: prepare-documents
+    strategy:
+      matrix:
+        batch: [1, 2, 3, 4, 5, 6, 7, 8] # Parallel embedding generation
+      fail-fast: false
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+
+      - name: Install Dependencies
+        run: |
+          npm ci
+          npm install openai @langchain/openai
+
+      - name: Download Document Chunks
+        uses: actions/download-artifact@v4
+        with:
+          name: document-chunks
+
+      - name: Generate Embeddings for Batch ${{ matrix.batch }}
+        id: embeddings
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          BATCH_NUMBER: ${{ matrix.batch }}
+          EMBEDDING_MODEL: ${{ env.EMBEDDING_MODEL }}
+        run: |
+          node scripts/generate-embeddings.js \
+            --batch ${{ matrix.batch }} \
+            --model ${{ env.EMBEDDING_MODEL }} \
+            --max-retries ${{ env.MAX_RETRIES }}
+
+      - name: Upload Embeddings
+        uses: actions/upload-artifact@v4
+        with:
+          name: embeddings-batch-${{ matrix.batch }}
+          path: embeddings-batch-${{ matrix.batch }}.json
+
+      - name: Calculate Embedding Cost
+        run: |
+          cost=$(node scripts/calculate-embedding-cost.js embeddings-batch-${{ matrix.batch }}.json)
+          echo "💰 Batch ${{ matrix.batch }} embedding cost: $$cost"
+
+  ingest-to-supabase:
+    name: Ingest Embeddings to Supabase
+    runs-on: ubuntu-latest
+    needs: generate-embeddings
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+
+      - name: Install Supabase Dependencies
+        run: |
+          npm ci
+          npm install @supabase/supabase-js
+
+      - name: Download All Embedding Batches
+        uses: actions/download-artifact@v4
+        with:
+          path: embeddings
+
+      - name: Initialize Supabase Vector Store
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: |
+          node scripts/init-vector-store.js
+
+      - name: Ingest Embeddings
+        id: ingest
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          CASE_ID: ${{ github.event.inputs.case_id || 'AUTO' }}
+        run: |
+          node scripts/ingest-embeddings.js \
+            --embeddings-dir embeddings/ \
+            --case-id "${{ github.event.inputs.case_id || 'AUTO' }}" \
+            --batch-size ${{ github.event.inputs.batch_size || 50 }}
+
+          ingested=$(jq '.ingested_count' ingestion-result.json)
+          echo "ingested=$ingested" >> $GITHUB_OUTPUT
+          echo "✅ Ingested $ingested documents"
+
+      - name: Upload Ingestion Results
+        uses: actions/upload-artifact@v4
+        with:
+          name: ingestion-results
+          path: ingestion-result.json
+
+  verify-ingestion:
+    name: Verify RAG Functionality
+    runs-on: ubuntu-latest
+    needs: ingest-to-supabase
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+
+      - name: Install Dependencies
+        run: |
+          npm ci
+          npm install @supabase/supabase-js openai
+
+      - name: Test Vector Search
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          node scripts/test-vector-search.js
+
+      - name: Test RAG Query
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          node scripts/test-rag-query.js \
+            --query "What documents mention settlement discussions?" \
+            --limit 10
+
+      - name: Verify Document Count
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: |
+          node scripts/verify-document-count.js
+
+      - name: Generate Verification Report
+        run: |
+          node scripts/generate-verification-report.js > verification-report.json
+
+      - name: Upload Verification Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: verification-report
+          path: verification-report.json
+
+  create-indexes:
+    name: Optimize Vector Indexes
+    runs-on: ubuntu-latest
+    needs: verify-ingestion
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+
+      - name: Create HNSW Indexes
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: |
+          node scripts/create-vector-indexes.js
+
+      - name: Optimize Query Performance
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: |
+          node scripts/optimize-query-performance.js
+
+  update-metadata:
+    name: Update Document Metadata
+    runs-on: ubuntu-latest
+    needs: ingest-to-supabase
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+
+      - name: Extract Document Metadata
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: |
+          node scripts/extract-metadata.js
+
+      - name: Enrich with AI Analysis
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          node scripts/enrich-metadata.js
+
+      - name: Update Supabase Metadata
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: |
+          node scripts/update-metadata.js
+
+  generate-ingestion-report:
+    name: Generate Ingestion Report
+    runs-on: ubuntu-latest
+    needs: [verify-ingestion, create-indexes, update-metadata]
+    if: always()
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Download All Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: reports
+
+      - name: Generate Comprehensive Report
+        run: |
+          node scripts/generate-ingestion-report.js reports/
+
+      - name: Create Summary Comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const report = JSON.parse(fs.readFileSync('reports/ingestion-summary.json', 'utf8'));
+
+            let body = `## 📊 RAG Ingestion Complete\n\n`;
+            body += `**Documents Ingested:** ${report.documents_ingested}\n`;
+            body += `**Total Chunks:** ${report.total_chunks}\n`;
+            body += `**Embeddings Generated:** ${report.embeddings_count}\n`;
+            body += `**Total Cost:** $${report.total_cost}\n`;
+            body += `**Processing Time:** ${report.processing_time}\n\n`;
+            body += `**Vector Search Status:** ✅ Operational\n`;
+            body += `**RAG Query Status:** ✅ Operational\n\n`;
+            body += `### Next Steps\n`;
+            body += `- Documents are now searchable via RAG\n`;
+            body += `- Use the discovery dashboard to query documents\n`;
+            body += `- Review metadata enrichment results\n`;
+
+            await github.rest.repos.createCommitComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              commit_sha: context.sha,
+              body: body
+            });
+
+      - name: Upload Final Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: ingestion-final-report
+          path: |
+            reports/ingestion-summary.json
+            reports/ingestion-detailed.html

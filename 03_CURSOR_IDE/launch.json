@@ -1,0 +1,133 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Python: Current File",
+      "type": "python",
+      "request": "launch",
+      "program": "${file}",
+      "console": "integratedTerminal",
+      "env": {
+        "SUPABASE_URL": "${env:SUPABASE_URL}",
+        "SUPABASE_SERVICE_KEY": "${env:SUPABASE_SERVICE_KEY}",
+        "OPENAI_API_KEY": "${env:OPENAI_API_KEY}",
+        "ANTHROPIC_API_KEY": "${env:ANTHROPIC_API_KEY}"
+      },
+      "justMyCode": true
+    },
+    {
+      "name": "Debug: CodeRed Client",
+      "type": "python",
+      "request": "launch",
+      "program": "${workspaceFolder}/cursor/codered-client.py",
+      "args": ["test"],
+      "console": "integratedTerminal",
+      "env": {
+        "SUPABASE_URL": "${env:SUPABASE_URL}",
+        "SUPABASE_SERVICE_KEY": "${env:SUPABASE_SERVICE_KEY}"
+      }
+    },
+    {
+      "name": "Debug: RAG Context Fetcher",
+      "type": "python",
+      "request": "launch",
+      "program": "${workspaceFolder}/cursor/rag-context-fetcher.py",
+      "args": [
+        "--file",
+        "${file}",
+        "--top-k",
+        "5"
+      ],
+      "console": "integratedTerminal",
+      "env": {
+        "SUPABASE_URL": "${env:SUPABASE_URL}",
+        "SUPABASE_SERVICE_KEY": "${env:SUPABASE_SERVICE_KEY}",
+        "OPENAI_API_KEY": "${env:OPENAI_API_KEY}"
+      }
+    },
+    {
+      "name": "Debug: Cost Tracker",
+      "type": "python",
+      "request": "launch",
+      "program": "${workspaceFolder}/cursor/cost-tracker.py",
+      "args": [
+        "--report",
+        "today"
+      ],
+      "console": "integratedTerminal",
+      "env": {
+        "SUPABASE_URL": "${env:SUPABASE_URL}",
+        "SUPABASE_SERVICE_KEY": "${env:SUPABASE_SERVICE_KEY}"
+      }
+    },
+    {
+      "name": "Debug: Privilege Detector",
+      "type": "python",
+      "request": "launch",
+      "program": "${workspaceFolder}/cursor/privilege-detector.py",
+      "args": [
+        "--file",
+        "${file}"
+      ],
+      "console": "integratedTerminal",
+      "env": {
+        "SUPABASE_URL": "${env:SUPABASE_URL}",
+        "SUPABASE_SERVICE_KEY": "${env:SUPABASE_SERVICE_KEY}"
+      }
+    },
+    {
+      "name": "Test: Ingest Document",
+      "type": "python",
+      "request": "launch",
+      "program": "${workspaceFolder}/cursor/rag-context-fetcher.py",
+      "args": [
+        "--ingest",
+        "--file",
+        "${file}",
+        "--case-id",
+        "${input:caseId}",
+        "--zone",
+        "${input:zone}"
+      ],
+      "console": "integratedTerminal",
+      "env": {
+        "SUPABASE_URL": "${env:SUPABASE_URL}",
+        "SUPABASE_SERVICE_KEY": "${env:SUPABASE_SERVICE_KEY}",
+        "OPENAI_API_KEY": "${env:OPENAI_API_KEY}"
+      }
+    },
+    {
+      "name": "Test: Check Budget",
+      "type": "python",
+      "request": "launch",
+      "program": "${workspaceFolder}/cursor/cost-tracker.py",
+      "args": [
+        "--check-budget",
+        "--report",
+        "today",
+        "--budget",
+        "200.0"
+      ],
+      "console": "integratedTerminal",
+      "env": {
+        "SUPABASE_URL": "${env:SUPABASE_URL}",
+        "SUPABASE_SERVICE_KEY": "${env:SUPABASE_SERVICE_KEY}"
+      }
+    }
+  ],
+  "inputs": [
+    {
+      "id": "caseId",
+      "type": "promptString",
+      "description": "Enter Case ID (e.g., CUSTODY-2024-001)",
+      "default": "CUSTODY-2024-001"
+    },
+    {
+      "id": "zone",
+      "type": "pickString",
+      "description": "Select Zone Classification",
+      "options": ["RED", "YELLOW", "GREEN"],
+      "default": "YELLOW"
+    }
+  ]
+}
