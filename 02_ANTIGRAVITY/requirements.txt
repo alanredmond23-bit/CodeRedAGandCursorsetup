@@ -1,7 +1,7 @@
 # Antigravity Cloud Orchestration - Python Dependencies
 
 # Core Framework
-asyncio==3.4.3
+asyncio==4.0.0
 pydantic==2.5.3
 python-dotenv==1.0.0
 
