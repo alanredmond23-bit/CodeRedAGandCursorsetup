@@ -35,7 +35,7 @@ python-dotenv==1.0.0
 decimal
 
 # JSON handling
-jsonschema==4.20.0
+jsonschema==4.25.1
 
 # Date/time testing
 python-dateutil==2.8.2
